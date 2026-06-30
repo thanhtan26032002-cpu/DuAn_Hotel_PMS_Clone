@@ -33,9 +33,29 @@
         </button>
 
         <div class="segment-filter">
-          <button class="segment-item active">Tất cả</button>
-          <button class="segment-item">Chưa khóa</button>
-          <button class="segment-item">Khóa</button>
+          <button
+            class="segment-item"
+            :class="{ active: currentSegment === 'Tất cả' }"
+            @click="currentSegment = 'Tất cả'"
+          >
+            Tất cả
+          </button>
+
+          <button
+            class="segment-item"
+            :class="{ active: currentSegment === 'Chưa khóa' }"
+            @click="currentSegment = 'Chưa khóa'"
+          >
+            Chưa khóa
+          </button>
+
+          <button
+            class="segment-item"
+            :class="{ active: currentSegment === 'Khóa' }"
+            @click="currentSegment = 'Khóa'"
+          >
+            Khóa
+          </button>
         </div>
       </div>
 
@@ -151,6 +171,9 @@
 
 <script setup>
 import { ref } from 'vue'
+
+// Thêm dòng này để lưu trạng thái nút đang được chọn
+const currentSegment = ref('Tất cả')
 
 // Cấu trúc dữ liệu phân tầng động theo các ảnh mẫu (Tầng 4, Tầng 5, Tầng 6)
 const floorGroups = ref([

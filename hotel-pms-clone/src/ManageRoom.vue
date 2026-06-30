@@ -32,10 +32,9 @@
         Xem
       </button>
       <button class="btn btn-export">
-        <svg class="icon-btn" viewBox="0 0 24 24">
+        <svg viewBox="64 64 896 896" width="14" height="14" fill="currentColor">
           <path
-            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"
-            fill="#fff"
+            d="M854.6 288.7c6 6 9.4 14.1 9.4 22.6V928c0 17.7-14.3 32-32 32H192c-17.7 0-32-14.3-32-32V96c0-17.7 14.3-32 32-32h424.7c8.5 0 16.7 3.4 22.7 9.4l215.2 215.3zM790.2 326L602 137.8V326h188.2zM516 673.3h-75.1l-50.5-163.6-50.5 163.6H264.8l82-243.6-77-227.6h75.1l45.4 150.2 45.4-150.2H511l-77 227.6 82 243.6z"
           />
         </svg>
         Xuất file
@@ -190,7 +189,10 @@ const tableData = ref([
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: #ccc;
   transition: 0.4s;
   border-radius: 30px;
@@ -199,7 +201,7 @@ const tableData = ref([
 /* Cục tròn trượt */
 .slider::before {
   position: absolute;
-  content: "";
+  content: '';
   height: 22px;
   width: 22px;
   left: 3px;
@@ -208,12 +210,12 @@ const tableData = ref([
   border-radius: 50%;
   transition: 0.4s;
   z-index: 2;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Chữ "Thống kê phòng" nằm bên trong rãnh trượt */
 .slider::after {
-  content: "Thống kê phòng"; /* Nội dung chữ */
+  content: 'Thống kê phòng'; /* Nội dung chữ */
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
