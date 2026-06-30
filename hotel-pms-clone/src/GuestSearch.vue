@@ -17,7 +17,7 @@
         <div class="filter-left">
           <div class="toggle-group">
             <label class="toggle-switch">
-              <input type="checkbox" checked />
+              <input type="checkbox"/>
               <span class="slider"></span>
             </label>
           </div>
