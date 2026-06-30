@@ -15,7 +15,22 @@
     <div v-if="currentTab === 'CÔNG TY'" class="tab-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
           <button class="btn btn-cyan">Đồng bộ</button>
           <button class="btn btn-blue">
             <svg
@@ -217,7 +232,22 @@
     <div v-else-if="currentTab === 'THỊ TRƯỜNG'" class="tab-content narrow-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
         <div class="right-actions">
           <button class="icon-btn btn-help">
@@ -329,7 +359,22 @@
     <div v-else-if="currentTab === 'NGUỒN KHÁCH'" class="tab-content narrow-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
 
@@ -425,7 +470,22 @@
     <div v-else-if="currentTab === 'CHI NHÁNH'" class="tab-content narrow-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
 
@@ -507,7 +567,22 @@
     <div v-else-if="currentTab === 'LOẠI'" class="tab-content narrow-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
 
@@ -646,8 +721,22 @@
     <div v-else-if="currentTab === 'NGƯỜI ĐẶT PHÒNG'" class="tab-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
-          <button class="btn btn-cyan">Đồng bộ</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
 
@@ -736,7 +825,22 @@
     <div v-else-if="currentTab === 'CÔNG TY THÀNH VIÊN'" class="tab-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
 
@@ -837,7 +941,22 @@
     <div v-else-if="currentTab === 'PHÒNG BAN QUẢN LÝ'" class="tab-content">
       <div class="toolbar">
         <div class="left-actions">
-          <button class="btn btn-cyan"><span class="icon">+</span> Thêm</button>
+          <button class="btn btn-cyan">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="width: 10px; height: 10px; margin-right: 4px"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm
+          </button>
         </div>
       </div>
       <div class="table-wrapper cong-ty-tv-table-wrapper fit-content-table">
@@ -1753,8 +1872,9 @@ const phongBanQuanLyData = ref([{ id: 1, ma: 'PND', ten: 'PND', suDung: false }]
   height: 14px;
 }
 .icon {
-  font-weight: bold;
-  font-size: 14px;
+  border: 1px solid white;
+  background-color: white;
+  color: #85c8ea;
 }
 
 .icon-btn {
