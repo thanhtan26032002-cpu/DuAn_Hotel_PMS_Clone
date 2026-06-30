@@ -649,7 +649,7 @@ const calcBookingPosition = (booking) => {
 .toggle-text-inside {
   font-size: 11px;
   font-weight: bold;
-  color: #fff;
+  color: black;
   position: absolute;
   top: 50%;
   transform: translateY(-50%); /* Căn chữ chuẩn giữa theo chiều dọc */
@@ -662,8 +662,9 @@ const calcBookingPosition = (booking) => {
 
 /* TRẠNG THÁI BẬT (Cục tròn ở bên PHẢI): Ép chữ chuyển sang sát bên TRÁI */
 .toggle-track-inner.active .toggle-text-inside {
-  left: 10px;
+  left: 8px;
   right: auto;
+  color: white;
 }
 
 /* 3. Cục tròn gạt */

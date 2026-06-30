@@ -2,7 +2,7 @@
   <div class="statistics-wrapper">
     <div class="toolbar">
       <label class="custom-toggle">
-        <input type="checkbox" checked />
+        <input type="checkbox"/>
         <span class="slider round"></span>
       </label>
 

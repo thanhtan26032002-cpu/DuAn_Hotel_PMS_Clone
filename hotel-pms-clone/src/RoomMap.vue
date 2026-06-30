@@ -10,7 +10,7 @@ import { mockData } from './mockData.js'
 
       <div class="sidebar-toggle-group">
         <label class="switch-sidebar">
-          <input type="checkbox" checked />
+          <input type="checkbox"/>
           <span class="slider-sidebar slider-time"></span>
         </label>
       </div>
@@ -79,7 +79,7 @@ import { mockData } from './mockData.js'
 
       <div class="sidebar-toggle-group bottom-toggle">
         <label class="switch-sidebar">
-          <input type="checkbox" />
+          <input type="checkbox" checked />
           <span class="slider-sidebar slider-view"></span>
         </label>
       </div>
@@ -257,7 +257,7 @@ import { mockData } from './mockData.js'
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: white;
+  color: black;
   font-size: 12px;
   font-weight: bold;
   z-index: 1;
@@ -284,6 +284,7 @@ import { mockData } from './mockData.js'
   content: "Tương lai";
   right: auto;
   left: 10px; /* Bật -> Cục tròn bên phải -> Chữ nhảy sang trái */
+  color: white;
 }
 
 /* 2. NÚT DƯỚI (slider-view) */
@@ -295,6 +296,7 @@ import { mockData } from './mockData.js'
   content: "Bảng";
   right: auto;
   left: 15px; /* Bật -> Chữ Bảng nhảy sang trái */
+  color: white;
 }
 
 .icon-setting {
