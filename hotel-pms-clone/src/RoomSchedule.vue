@@ -227,7 +227,7 @@ import { ref, reactive } from 'vue'
 
 const uiState = reactive({
   viewNight: false,
-  viewNotes: true,
+  viewNotes: false,
 })
 
 const COLUMN_WIDTH = 72
