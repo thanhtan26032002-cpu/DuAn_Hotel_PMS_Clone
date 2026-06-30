@@ -337,7 +337,6 @@ button {
 .bottom-wrapper {
   background-color: #f0f4f6;
   width: 100%;
-  padding: 0 40px;
   box-sizing: border-box;
   display: flex;
 }
@@ -351,6 +350,7 @@ button {
   box-sizing: border-box;
   overflow-x: auto;
   flex-wrap: nowrap;
+  padding: 0 40px;
 }
 
 .bottom-bar::-webkit-scrollbar {

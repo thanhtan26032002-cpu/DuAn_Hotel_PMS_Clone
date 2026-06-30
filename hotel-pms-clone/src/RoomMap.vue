@@ -9,11 +9,10 @@ import { mockData } from './mockData.js'
       <div class="sidebar-date-box">16 / 06 / 2026</div>
 
       <div class="sidebar-toggle-group">
-        <label class="switch">
+        <label class="switch-sidebar">
           <input type="checkbox" checked />
-          <span class="slider round"></span>
+          <span class="slider-sidebar slider-time"></span>
         </label>
-        <span class="toggle-label">Hiện tại</span>
       </div>
 
       <div class="pms-stat-item">
@@ -79,10 +78,9 @@ import { mockData } from './mockData.js'
       </div>
 
       <div class="sidebar-toggle-group bottom-toggle">
-        <span class="toggle-label">Bảng</span>
-        <label class="switch">
+        <label class="switch-sidebar">
           <input type="checkbox" />
-          <span class="slider round"></span>
+          <span class="slider-sidebar slider-view"></span>
         </label>
       </div>
 
@@ -184,7 +182,7 @@ import { mockData } from './mockData.js'
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 6px;
+  padding: 10px 10px;
   flex-shrink: 0;
   margin-top: 10px;
   overflow-y: auto; /* Nếu sidebar dài thì tự nó cuộn thôi */
@@ -203,21 +201,100 @@ import { mockData } from './mockData.js'
   background-color: #f8fafc;
 }
 
-/* Cấu trúc nút Toggle chuyển mạch nhỏ nhắn */
+/* ==================== GIAO DIỆN CÔNG TẮC SIDEBAR (DÙNG CHUNG CHUNG) ==================== */
 .sidebar-toggle-group {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: bold;
-  color: #334155;
-  margin-bottom: 14px;
-  width: 100%;
+  margin-bottom: 20px;
 }
 .sidebar-toggle-group.bottom-toggle {
-  margin-top: 10px; /* Đẩy sát xuống cạnh dưới */
+  margin-top: 10px;
   margin-bottom: auto;
+}
+
+/* Ẩn ô checkbox mặc định */
+.switch-sidebar input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Kích thước khung công tắc */
+.switch-sidebar {
+  position: relative;
+  display: inline-block;
+  width: 100px;
+  height: 28px;
+}
+
+/* Rãnh trượt khi TẮT (Màu xám) */
+.slider-sidebar {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  border-radius: 30px;
+  transition: 0.4s;
+}
+
+/* Cục tròn trượt */
+.slider-sidebar::before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Định dạng chung cho chữ nằm trong nút */
+.slider-sidebar::after {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 1;
+  transition: 0.4s;
+}
+
+/* --- HIỆU ỨNG KHI BẬT (DÙNG CHUNG) --- */
+.switch-sidebar input:checked + .slider-sidebar {
+  background-color: #3b82f6; /* Nền đổi màu xanh */
+}
+.switch-sidebar input:checked + .slider-sidebar::before {
+  transform: translateX(72px); /* Cục tròn trượt qua phải */
+}
+
+
+/* ==================== CHỮ RIÊNG CHO TỪNG NÚT ==================== */
+
+/* 1. NÚT TRÊN (slider-time) */
+.slider-time::after {
+  content: "Hiện tại";
+  right: 12px; /* Tắt -> Cục tròn bên trái -> Chữ nằm bên phải */
+}
+.switch-sidebar input:checked + .slider-time::after {
+  content: "Tương lai";
+  right: auto;
+  left: 10px; /* Bật -> Cục tròn bên phải -> Chữ nhảy sang trái */
+}
+
+/* 2. NÚT DƯỚI (slider-view) */
+.slider-view::after {
+  content: "Lưới";
+  right: 18px; /* Tắt -> Chữ Lưới nằm phải (Căn lề sâu hơn 1 chút cho chữ ngắn) */
+}
+.switch-sidebar input:checked + .slider-view::after {
+  content: "Bảng";
+  right: auto;
+  left: 15px; /* Bật -> Chữ Bảng nhảy sang trái */
 }
 
 .icon-setting {
