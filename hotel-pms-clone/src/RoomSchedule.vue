@@ -48,20 +48,23 @@
         </div>
 
         <div class="pms-switch-group">
-          <button
-            class="pms-pill-toggle"
-            :class="{ active: uiState.viewNight }"
-            @click="uiState.viewNight = !uiState.viewNight"
-          >
-            Xem đêm
-          </button>
-          <button
-            class="pms-pill-toggle"
-            :class="{ active: uiState.viewNotes }"
-            @click="uiState.viewNotes = !uiState.viewNotes"
-          >
-            Ghi chú
-          </button>
+          <div class="toggle-item-inner" @click="uiState.viewNight = !uiState.viewNight">
+            <div class="toggle-track-inner" :class="{ active: uiState.viewNight }">
+              <span class="toggle-text-inside">
+                {{ uiState.viewNight ? 'Xem ngày' : 'Xem đêm' }}
+              </span>
+              <div class="toggle-knob-inner"></div>
+            </div>
+          </div>
+
+          <div class="toggle-item-inner" @click="uiState.viewNotes = !uiState.viewNotes">
+            <div class="toggle-track-inner" :class="{ active: uiState.viewNotes }">
+              <span class="toggle-text-inside">
+                {{ uiState.viewNotes ? 'Ghi chú' : 'Ghi chú' }}
+              </span>
+              <div class="toggle-knob-inner"></div>
+            </div>
+          </div>
         </div>
 
         <div class="pms-search-group">
@@ -555,6 +558,7 @@ const calcBookingPosition = (booking) => {
   border-bottom: 1px solid var(--border-color);
   gap: 10px;
 }
+
 .topbar-left-group {
   display: flex;
   align-items: center;
@@ -614,40 +618,78 @@ const calcBookingPosition = (booking) => {
   font-size: 13px;
 }
 
+/* --- Giao diện Toggle Switch có chữ bên trong --- */
 .pms-switch-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 15px;
 }
-.pms-pill-toggle {
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  padding: 2px 10px;
-  background: #fff;
-  font-size: 12px;
-  color: #555;
+
+.toggle-item-inner {
   cursor: pointer;
+  user-select: none;
 }
-.pms-pill-toggle.active {
-  background: #8bd3fe;
-  color: #000;
-  border-color: #8bd3fe;
+
+/* 1. Tăng chiều dài nút ra một chút (85px) để đủ chỗ chứa chữ */
+.toggle-track-inner {
+  width: 85px;
+  height: 24px;
+  background-color: #ccc; /* Màu khi tắt */
+  border-radius: 20px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Màu nền khi bật */
+.toggle-track-inner.active {
+  background-color: #8bd3fe;
+}
+
+/* 2. Căn chỉnh chữ */
+.toggle-text-inside {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); /* Căn chữ chuẩn giữa theo chiều dọc */
+  transition: all 0.3s ease;
+
+  /* TRẠNG THÁI TẮT (Cục tròn ở bên TRÁI): Ép chữ nằm sát bên PHẢI */
+  right: 10px;
+  left: auto;
+}
+
+/* TRẠNG THÁI BẬT (Cục tròn ở bên PHẢI): Ép chữ chuyển sang sát bên TRÁI */
+.toggle-track-inner.active .toggle-text-inside {
+  left: 10px;
+  right: auto;
+}
+
+/* 3. Cục tròn gạt */
+.toggle-knob-inner {
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px; /* Vị trí mặc định ở sát mép trái */
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Khi bật: Cục tròn trượt sang sát mép phải */
+.toggle-track-inner.active .toggle-knob-inner {
+  /* 100% chiều dài trừ đi 18px độ rộng cục tròn và 3px lề */
+  left: calc(100% - 21px);
 }
 
 .pms-search-group {
   display: flex;
   align-items: center;
 }
-.pms-search-group input {
-  padding: 4px 8px;
-  border: 1px solid #c8c8c8;
-  border-right: none;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-  width: 170px;
-  font-size: 12px;
-  outline: none;
-}
+
 .pms-search-btn {
   background-color: #8bd3fe;
   border: 1px solid #8bd3fe;
