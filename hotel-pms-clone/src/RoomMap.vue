@@ -266,7 +266,7 @@ import { mockData } from './mockData.js'
 
 /* --- HIỆU ỨNG KHI BẬT (DÙNG CHUNG) --- */
 .switch-sidebar input:checked + .slider-sidebar {
-  background-color: #3b82f6; /* Nền đổi màu xanh */
+  background-color: #7dd3fc; /* Nền đổi màu xanh */
 }
 .switch-sidebar input:checked + .slider-sidebar::before {
   transform: translateX(72px); /* Cục tròn trượt qua phải */

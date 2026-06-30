@@ -20,7 +20,6 @@
               <input type="checkbox" checked />
               <span class="slider"></span>
             </label>
-            <span class="toggle-label">Tìm theo ngày</span>
           </div>
 
           <div class="date-picker-group">
@@ -1011,24 +1010,27 @@ const khachData = ref([
   align-items: center;
   gap: 16px;
 }
+/* --- CẤU TRÚC THANH TOGGLE TÌM THEO NGÀY --- */
 .toggle-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #e2e8f0;
-  padding: 4px 12px;
-  border-radius: 20px;
 }
+
 .toggle-switch {
   position: relative;
-  width: 32px;
-  height: 18px;
+  display: inline-block;
+  width: 125px; /* Chiều rộng tối ưu để chứa vừa chữ "Tìm theo ngày" */
+  height: 26px;
 }
+
+/* Ẩn check-box mặc định */
 .toggle-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
+
+/* Rãnh trượt của nút */
 .slider {
   position: absolute;
   cursor: pointer;
@@ -1036,23 +1038,59 @@ const khachData = ref([
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #fff;
-  border-radius: 34px;
+  background-color: #ccc;
   transition: 0.4s;
+  border-radius: 26px;
 }
+
+/* Cục tròn di chuyển */
 .slider:before {
   position: absolute;
   content: '';
-  height: 14px;
-  width: 14px;
-  left: 2px;
-  bottom: 2px;
-  background-color: #ccc;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
   border-radius: 50%;
   transition: 0.4s;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
-.toggle-label {
-  font-weight: 500;
+
+/* Hiển thị chữ "Tìm theo ngày" bên trong lòng nút gạt */
+.slider:after {
+  content: 'Tìm theo ngày';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: black;
+  font-size: 11px;
+  font-weight: bold;
+  z-index: 1;
+  transition: 0.4s;
+
+  /* Trạng thái TẮT: Cục tròn ở TRÁI -> Chữ dồn sang PHẢI */
+  right: 12px;
+}
+
+/* --- TRẠNG THÁI BẬT (CHECKED) --- */
+
+/* 1. Nền chuyển sang màu xanh dương công nghệ */
+.toggle-switch input:checked + .slider {
+  background-color: #7dd3fc;
+}
+
+/* 2. Đẩy cục tròn di chuyển sang bên phải cực mượt */
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(99px); /* Khoảng cách trượt: 125px (tổng) - 20px (cục tròn) - 6px (lề) */
+}
+
+/* 3. Đẩy chữ "Tìm theo ngày" né sang lề bên trái */
+.toggle-switch input:checked + .slider:after {
+  right: auto;
+  left: 12px;
+  color: white;
 }
 .date-picker-group {
   position: relative;

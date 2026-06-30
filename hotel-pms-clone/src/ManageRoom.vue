@@ -232,7 +232,7 @@ const tableData = ref([
 
 /* 1. Nền đổi sang màu xanh */
 .custom-toggle input:checked + .slider {
-  background-color: #3b82f6;
+  background-color: #7dd3fc;
 }
 
 /* 2. Cục tròn trượt sang phải */
