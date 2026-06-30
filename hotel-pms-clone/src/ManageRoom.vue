@@ -4,7 +4,6 @@
       <label class="custom-toggle">
         <input type="checkbox" checked />
         <span class="slider round"></span>
-        <span class="toggle-label">Thống kê phòng</span>
       </label>
 
       <div class="date-picker-box">
@@ -171,37 +170,79 @@ const tableData = ref([
   align-items: center;
   cursor: pointer;
 }
-.custom-toggle input {
-  display: none;
-}
-.slider {
+
+/* Ẩn ô checkbox mặc định đi */
+.custom-toggle {
   position: relative;
-  width: 34px;
-  height: 18px;
+  display: inline-block;
+  width: 145px; /* Làm nút rộng ra 145px để đủ chứa chữ dài */
+  height: 28px;
+}
+
+/* Ẩn ô checkbox mặc định */
+.custom-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Rãnh trượt khi TẮT */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
   background-color: #ccc;
   transition: 0.4s;
-  border-radius: 18px;
-  margin-right: 8px;
+  border-radius: 30px;
 }
-.slider:before {
+
+/* Cục tròn trượt */
+.slider::before {
   position: absolute;
-  content: '';
-  height: 14px;
-  width: 14px;
-  left: 2px;
-  bottom: 2px;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
   background-color: white;
-  transition: 0.4s;
   border-radius: 50%;
+  transition: 0.4s;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
+
+/* Chữ "Thống kê phòng" nằm bên trong rãnh trượt */
+.slider::after {
+  content: "Thống kê phòng"; /* Nội dung chữ */
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: black;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 1;
+  transition: 0.4s;
+  /* Khi TẮT: Cục tròn ở TRÁI -> Chữ bám sát lề PHẢI */
+  right: 15px;
+}
+
+/* --- KHI BẬT (Checked) --- */
+
+/* 1. Nền đổi sang màu xanh */
 .custom-toggle input:checked + .slider {
-  background-color: #c0c0c0;
+  background-color: #3b82f6;
 }
-.custom-toggle input:checked + .slider:before {
-  transform: translateX(16px);
+
+/* 2. Cục tròn trượt sang phải */
+.custom-toggle input:checked + .slider::before {
+  transform: translateX(117px); /* 145px (tổng) - 22px (cục tròn) - 6px (lề) = 117px */
 }
-.toggle-label {
-  font-weight: normal;
+
+/* 3. Chữ "Thống kê phòng" né sang trái */
+.custom-toggle input:checked + .slider::after {
+  right: auto;
+  left: 15px;
+  color: white; /* Khi BẬT: Cục tròn ở PHẢI -> Chữ bám sát lề TRÁI */
 }
 
 /* Date Picker Box */
