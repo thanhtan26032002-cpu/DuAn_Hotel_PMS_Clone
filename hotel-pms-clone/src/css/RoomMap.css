@@ -1,0 +1,123 @@
+/* --- BỐ CỤC TỔNG THỂ --- */
+.room-map-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background-color: #f4f7f9; /* Nền xám nhạt giúp các thẻ phòng nổi bật hơn */
+  min-height: 100vh;
+}
+
+/* --- TỪNG HÀNG (TẦNG) --- */
+.floor-row {
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Cắt góc bo tròn gọn gàng */
+}
+
+/* --- CỘT TÊN TẦNG (Bên trái) --- */
+.floor-indicator {
+  background-color: #4a5568; /* Màu xám đậm chuyên nghiệp */
+  color: #ffffff;
+  width: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.floor-text {
+  font-weight: 700;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* --- LƯỚI PHÒNG (Bên phải) --- */
+.rooms-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  flex: 1; /* Chiếm hết phần không gian còn lại */
+}
+
+/* --- THẺ PHÒNG (ROOM CARD) --- */
+.room-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 95px;
+  height: 65px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.room-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.room-name {
+  font-weight: bold;
+}
+
+.room-type {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.room-footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.client-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.bed-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- TRẠNG THÁI PHÒNG (STATUS COLORS) --- */
+
+/* 1. Phòng trống */
+.room-empty {
+  background-color: #ffffff;
+  border-color: #cbd5e1; /* Viền xám nhạt */
+  color: #334155;
+}
+.room-empty .room-type,
+.room-empty .bed-icon {
+  color: #64748b; /* Icon và loại phòng mờ hơn một chút */
+}
+
+/* 2. Phòng đang có khách sử dụng */
+.room-occupied {
+  background-color: #3b82f6; /* Nền xanh dương giống trong ảnh tham khảo */
+  border-color: #2563eb;
+  color: #ffffff;
+}
+.room-occupied .room-type,
+.room-occupied .bed-icon {
+  color: #e0f2fe;
+}
