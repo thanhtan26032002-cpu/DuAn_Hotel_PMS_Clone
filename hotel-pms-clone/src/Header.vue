@@ -187,21 +187,6 @@ const selectTab = (tabName) => {
         <a
           href="#"
           class="sub-tab"
-          :class="{ active: activeTab === 'Report' }"
-          @click.prevent="selectTab('Report')"
-        >
-          <img
-            src="./logo/booking8.svg"
-            alt="Report"
-            class="sub-icon-img"
-            :class="{ 'active-icon': activeTab === 'Report' }"
-          />
-          Báo Cáo
-        </a>
-
-        <a
-          href="#"
-          class="sub-tab"
           :class="{ active: activeTab === 'HistoryLog' }"
           @click.prevent="selectTab('HistoryLog')"
         >

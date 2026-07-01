@@ -8,7 +8,6 @@ import Company from './Company.vue'
 import GuestSearch from './GuestSearch.vue'
 import HistoryLog from './HistoryLog.vue'
 import ManageRoom from './ManageRoom.vue'
-import Report from './Report.vue'
 import RoomLock from './RoomLock.vue'
 import RoomSchedule from './RoomSchedule.vue'
 import WorkingList from './WorkingList.vue'
@@ -25,7 +24,6 @@ const changeView = (viewName) => {
   if (viewName == 'GuestSearch') currentView.value = GuestSearch
   if (viewName == 'HistoryLog') currentView.value = HistoryLog
   if (viewName == 'ManageRoom') currentView.value = ManageRoom
-  if (viewName == 'Report') currentView.value = Report
   if (viewName == 'RoomLock') currentView.value = RoomLock
   if (viewName == 'RoomSchedule') currentView.value = RoomSchedule
   if (viewName == 'WorkingList') currentView.value = WorkingList
