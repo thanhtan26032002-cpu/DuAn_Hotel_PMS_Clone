@@ -677,7 +677,7 @@ const calcBookingPosition = (booking) => {
   top: 3px;
   left: 3px; /* Vị trí mặc định ở sát mép trái */
   transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Khi bật: Cục tròn trượt sang sát mép phải */

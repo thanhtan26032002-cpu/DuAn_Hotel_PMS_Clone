@@ -10,7 +10,7 @@ import { mockData } from './mockData.js'
 
       <div class="sidebar-toggle-group">
         <label class="switch-sidebar">
-          <input type="checkbox"/>
+          <input type="checkbox" />
           <span class="slider-sidebar slider-time"></span>
         </label>
       </div>
@@ -231,7 +231,10 @@ import { mockData } from './mockData.js'
 .slider-sidebar {
   position: absolute;
   cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: #ccc;
   border-radius: 30px;
   transition: 0.4s;
@@ -240,7 +243,7 @@ import { mockData } from './mockData.js'
 /* Cục tròn trượt */
 .slider-sidebar::before {
   position: absolute;
-  content: "";
+  content: '';
   height: 22px;
   width: 22px;
   left: 3px;
@@ -249,7 +252,7 @@ import { mockData } from './mockData.js'
   border-radius: 50%;
   transition: 0.4s;
   z-index: 2;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* Định dạng chung cho chữ nằm trong nút */
@@ -272,16 +275,15 @@ import { mockData } from './mockData.js'
   transform: translateX(72px); /* Cục tròn trượt qua phải */
 }
 
-
 /* ==================== CHỮ RIÊNG CHO TỪNG NÚT ==================== */
 
 /* 1. NÚT TRÊN (slider-time) */
 .slider-time::after {
-  content: "Hiện tại";
+  content: 'Hiện tại';
   right: 12px; /* Tắt -> Cục tròn bên trái -> Chữ nằm bên phải */
 }
 .switch-sidebar input:checked + .slider-time::after {
-  content: "Tương lai";
+  content: 'Tương lai';
   right: auto;
   left: 10px; /* Bật -> Cục tròn bên phải -> Chữ nhảy sang trái */
   color: white;
@@ -289,11 +291,11 @@ import { mockData } from './mockData.js'
 
 /* 2. NÚT DƯỚI (slider-view) */
 .slider-view::after {
-  content: "Lưới";
+  content: 'Lưới';
   right: 18px; /* Tắt -> Chữ Lưới nằm phải (Căn lề sâu hơn 1 chút cho chữ ngắn) */
 }
 .switch-sidebar input:checked + .slider-view::after {
-  content: "Bảng";
+  content: 'Bảng';
   right: auto;
   left: 15px; /* Bật -> Chữ Bảng nhảy sang trái */
   color: white;
