@@ -11,6 +11,7 @@ import ManageRoom from './ManageRoom.vue'
 import RoomLock from './RoomLock.vue'
 import RoomSchedule from './RoomSchedule.vue'
 import WorkingList from './WorkingList.vue'
+import Report from './Report.vue'
 
 // 1. Khai báo component mặc định khi vừa vào app
 const currentView = shallowRef(RoomMap)
@@ -27,6 +28,7 @@ const changeView = (viewName) => {
   if (viewName == 'RoomLock') currentView.value = RoomLock
   if (viewName == 'RoomSchedule') currentView.value = RoomSchedule
   if (viewName == 'WorkingList') currentView.value = WorkingList
+  if (viewName == 'Report') currentView.value = Report
 }
 </script>
 
