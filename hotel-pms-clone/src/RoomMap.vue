@@ -4,6 +4,28 @@ import axios from 'axios'
 
 // 1. Biến lưu dữ liệu gốc từ API Laravel
 const rawRoomsData = ref([])
+const isGridMode = ref(true)
+
+const tableRows = computed(() => {
+  return rawRoomsData.value.map((room) => ({
+    roomName: room.room_number,
+    roomType: room.room_type?.type_short_name || room.room_type?.name || 'N/A',
+    clientNumber: room.max_guests || 0,
+    guestName: room.guest_name || room.guest_full_name || room.customer_name || 'Khách',
+    registrationCode: room.registration_code || room.booking_code || room.code || 'N/A',
+    arrivalDate: room.arrival_date || room.check_in_date || room.date_arrival || 'N/A',
+    departureDate: room.departure_date || room.check_out_date || room.date_departure || 'N/A',
+    company: room.company_name || room.company || room.agent || 'N/A',
+    floor: room.floor || 'Khác',
+    isLocked: room.is_locked || false,
+    isDirty: room.clean_status === 'Dirty',
+    isOccupied: room.is_occupied || false,
+    dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
+    isNameRed: !!room.is_departure,
+    isArrival: !!room.is_arrival,
+    isDeparture: !!room.is_departure,
+  }))
+})
 
 // 2. Gọi API để lấy danh sách từ Database
 const fetchRooms = async () => {
@@ -63,6 +85,13 @@ const roomsDataGrouped = computed(() => {
       }
     })
 })
+
+const roomRowClass = (room) => {
+  if (room.isDeparture) return 'table-row-departure'
+  if (room.isArrival) return 'table-row-arrival'
+  if (room.isOccupied) return 'table-row-occupied'
+  return 'table-row-vacant'
+}
 
 // 4. Chạy hàm lấy dữ liệu khi vừa mở trang
 onMounted(() => {
@@ -158,7 +187,7 @@ onMounted(() => {
 
       <div class="sidebar-toggle-group bottom-toggle">
         <label class="switch-sidebar">
-          <input type="checkbox" checked />
+          <input type="checkbox" v-model="isGridMode" />
           <span class="slider-sidebar slider-view"></span>
         </label>
       </div>
@@ -183,57 +212,113 @@ onMounted(() => {
 
     <main class="pms-main-viewport">
       <div class="pms-scrollable-canvas">
-        <div v-for="(floor, fIndex) in roomsDataGrouped" :key="fIndex" class="pms-floor-row">
-          <div class="pms-floor-sticky-header">
-            <div class="floor-badge-icon">{{ floor.floorName }}</div>
+        <template v-if="isGridMode">
+          <div class="board-view-header">
+            <div class="board-title">Sơ đồ phòng</div>
+            <div class="board-count">Tổng phòng: {{ rawRoomsData.length }}</div>
           </div>
+          <div v-for="(floor, fIndex) in roomsDataGrouped" :key="fIndex" class="pms-floor-row">
+            <div class="pms-floor-sticky-header">
+              <div class="floor-badge-icon">{{ floor.floorName }}</div>
+            </div>
 
-          <div class="pms-rooms-horizontal-list">
-            <div
-              v-for="(room, rIndex) in floor.rooms"
-              :key="rIndex"
-              :class="['pms-room-card', room.isOccupied ? 'state-occupied' : 'state-vacant']"
-            >
-              <div v-if="room.dotColor" :class="['card-status-dot', room.dotColor]"></div>
+            <div class="pms-rooms-horizontal-list">
+              <div
+                v-for="(room, rIndex) in floor.rooms"
+                :key="rIndex"
+                :class="['pms-room-card', room.isOccupied ? 'state-occupied' : 'state-vacant']"
+              >
+                <div v-if="room.dotColor" :class="['card-status-dot', room.dotColor]"></div>
 
-              <div class="card-info-box">
-                <span :class="['room-number-title', { 'color-alert-red': room.isNameRed }]">
-                  {{ room.roomName }}
-                </span>
-                <span class="room-type-sub">
-                  {{ room.roomType }}
-                  <template v-if="room.clientNumber > 0">
-                    - SL khách: {{ room.clientNumber }}
-                  </template>
-                </span>
-              </div>
+                <div class="card-top-row">
+                  <div class="card-info-box">
+                    <span :class="['room-number-title', { 'color-alert-red': room.isNameRed }]">
+                      {{ room.roomName }}
+                    </span>
+                    <span class="room-type-sub">{{ room.roomType }}</span>
+                  </div>
+                  <span class="room-capacity-pill">
+                    SL: {{ room.clientNumber }}
+                  </span>
+                </div>
 
-              <div v-if="room.isLocked" class="card-bottom-icon-left">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              </div>
+                <div v-if="room.isLocked" class="card-bottom-icon-left">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
 
-              <div v-if="room.isDirty" class="card-bottom-icon-right">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path
-                    d="M12.5 18.5L20 11c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0l-7.5 7.5c-.8.8-1 2.2-.5 3.2l2.5 2.5c1 .5 2.4.3 3.5-.7z"
-                    fill="#cbd5e1"
-                  />
-                  <path d="M5 19l4-4M3 21l3-3M7 15l4-4" stroke-linecap="round" />
-                </svg>
+                <div v-if="room.isDirty" class="card-bottom-icon-right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path
+                      d="M12.5 18.5L20 11c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0l-7.5 7.5c-.8.8-1 2.2-.5 3.2l2.5 2.5c1 .5 2.4.3 3.5-.7z"
+                      fill="#cbd5e1"
+                    />
+                    <path d="M5 19l4-4M3 21l3-3M7 15l4-4" stroke-linecap="round" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </template>
+
+        <template v-else>
+          <div class="table-view-header">
+            <div class="table-title">Danh sách phòng</div>
+            <div class="table-count">Tổng bản ghi: {{ tableRows.length }}</div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Phòng</th>
+                  <th>Loại</th>
+                  <th>SL khách</th>
+                  <th>Khách</th>
+                  <th>Mã ĐK</th>
+                  <th>Ngày đến</th>
+                  <th>Ngày đi</th>
+                  <th>Công ty</th>
+                  <th>Tầng</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, index) in tableRows" :key="index" :class="roomRowClass(row)">
+                  <td>
+                    <span :class="['room-number-title', { 'color-alert-red': row.isNameRed }]">
+                      {{ row.roomName }}
+                    </span>
+                  </td>
+                  <td>{{ row.roomType }}</td>
+                  <td>{{ row.clientNumber }}</td>
+                  <td>{{ row.guestName }}</td>
+                  <td>{{ row.registrationCode }}</td>
+                  <td>{{ row.arrivalDate }}</td>
+                  <td>{{ row.departureDate }}</td>
+                  <td>{{ row.company }}</td>
+                  <td>{{ row.floor }}</td>
+                  <td>
+                    <span class="status-chip">
+                      <span v-if="row.isDeparture">Đã đi</span>
+                      <span v-else-if="row.isArrival">Đã đến</span>
+                      <span v-else-if="row.isOccupied">Đang ở</span>
+                      <span v-else>Trống</span>
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
       </div>
     </main>
   </div>
@@ -494,25 +579,29 @@ onMounted(() => {
 /* KHU VỰC HIỂN THỊ SƠ ĐỒ PHÒNG CHÍNH */
 .pms-main-viewport {
   flex: 1;
-  padding: 12px;
+  padding: 14px 14px 12px;
   overflow: hidden;
+  background-color: #f8fbff;
 }
 
 .pms-scrollable-canvas {
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 38px);
   overflow-x: auto;
   overflow-y: auto;
+  padding: 10px 0 10px 10px;
 }
 
 .pms-floor-row {
   display: flex;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
   width: max-content;
 }
 
 .pms-floor-sticky-header {
-  width: 48px;
+  width: 64px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -520,51 +609,68 @@ onMounted(() => {
   position: sticky;
   left: 0;
   z-index: 5;
-  background-color: #f1f5f9;
-  padding-right: 6px;
+  background-color: #f8fbff;
+  padding-right: 10px;
 }
 
 .floor-badge-icon {
-  width: 32px;
-  height: 26px;
-  background-color: #bae6fd;
-  border-radius: 4px;
+  width: 42px;
+  height: 42px;
+  background-color: #dbeafe;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 14px;
   color: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 .pms-rooms-horizontal-list {
-  display: flex;
-  gap: 5px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(148px, 148px);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  align-items: start;
 }
 
 /* CẤU TRÚC CHI TIẾT THẺ PHÒNG (ROOM CARD) */
 .pms-room-card {
-  width: 140px;
-  height: 72px;
-  border-radius: 6px;
-  padding: 6px 8px;
+  width: 148px;
+  min-width: 148px;
+  height: 90px;
+  border-radius: 18px;
+  padding: 10px;
   box-sizing: border-box;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid #cbd5e1;
+  border: 1px solid transparent;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
 }
 
 /* Các trạng thái màu nền phòng */
 .pms-room-card.state-occupied {
-  background-color: #bae6fd;
-  border-color: #bae6fd;
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.14);
 }
 .pms-room-card.state-vacant {
   background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .card-info-box {
@@ -574,30 +680,42 @@ onMounted(() => {
 
 .room-number-title {
   font-weight: 800;
-  font-size: 15px;
+  font-size: 16px;
   color: #0f172a;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .room-number-title.color-alert-red {
-  color: #dc2626; /* Số phòng đổi màu đỏ khi là phòng đi */
+  color: #dc2626;
 }
 
 .room-type-sub {
   font-size: 12px;
   color: #475569;
-  font-weight: 500;
-  margin-top: 1px;
+  font-weight: 600;
+  margin-top: 8px;
+  line-height: 1.2;
+}
+
+.room-capacity-pill {
+  background: #eff6ff;
+  color: #0369a1;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 8px;
+  align-self: flex-start;
 }
 
 /* Chấm trạng thái góc trên bên phải */
 .card-status-dot {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 9px;
-  height: 9px;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
 }
 .card-status-dot.red {
   background-color: #ef4444; /* Phòng đi */
@@ -606,14 +724,185 @@ onMounted(() => {
   background-color: #22c55e; /* Phòng đến */
 }
 
+.board-view-header,
+.table-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.grid-cards-wrap,
+.grid-room-card,
+.grid-card-top,
+.grid-room-type,
+.grid-room-meta,
+.grid-room-footer,
+.table-dot,
+.table-dot.red,
+.table-dot.green {
+  display: none;
+}
+.board-title,
+.table-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.board-count,
+.table-count {
+  color: #475569;
+  font-size: 13px;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1200px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #334155;
+  text-align: left;
+}
+
+.data-table thead th {
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.data-table tbody tr:hover {
+  background: #e2f2ff;
+}
+
+.data-table tbody tr.table-row-departure {
+  background: rgba(254, 226, 226, 0.7);
+}
+.data-table tbody tr.table-row-arrival {
+  background: rgba(220, 252, 231, 0.7);
+}
+.data-table tbody tr.table-row-occupied {
+  background: rgba(219, 234, 254, 0.7);
+}
+.data-table tbody tr.table-row-vacant {
+  background: #ffffff;
+}
+
+.data-table tbody tr td {
+  vertical-align: middle;
+}
+
+.grid-cards-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.grid-room-card {
+  min-height: 96px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.grid-room-card.state-occupied {
+  background: #eff6ff;
+}
+
+.grid-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.grid-room-type {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.grid-room-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.grid-room-footer {
+  margin-top: 10px;
+}
+
+.table-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.table-dot.red {
+  background-color: #ef4444;
+}
+.table-dot.green {
+  background-color: #22c55e;
+}
+
+.table-row-departure {
+  background: rgba(254, 226, 226, 0.7);
+}
+.table-row-arrival {
+  background: rgba(220, 252, 231, 0.7);
+}
+.table-row-occupied {
+  background: rgba(219, 234, 254, 0.7);
+}
+.table-row-vacant {
+  background: #ffffff;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 /* Định vị biểu tượng ổ khóa (Góc trái dưới) */
 .card-bottom-icon-left {
   position: absolute;
-  bottom: 5px;
+  bottom: 6px;
   left: 8px;
   width: 14px;
   height: 14px;
-  color: #ef4444; /* Màu đỏ nổi bật cho ổ khóa bảo trì */
+  color: #ef4444;
 }
 .card-bottom-icon-left svg {
   width: 100%;
@@ -623,11 +912,11 @@ onMounted(() => {
 /* Định vị biểu tượng cây chổi dọn dẹp (Góc phải dưới) */
 .card-bottom-icon-right {
   position: absolute;
-  bottom: 5px;
+  bottom: 6px;
   right: 8px;
-  width: 15px;
-  height: 15px;
-  color: #64748b;
+  width: 14px;
+  height: 14px;
+  color: #475569;
 }
 .card-bottom-icon-right svg {
   width: 100%;
