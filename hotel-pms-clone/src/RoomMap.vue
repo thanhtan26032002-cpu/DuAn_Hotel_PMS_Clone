@@ -7,24 +7,34 @@ const rawRoomsData = ref([])
 const isGridMode = ref(true)
 
 const tableRows = computed(() => {
-  return rawRoomsData.value.map((room) => ({
-    roomName: room.room_number,
-    roomType: room.room_type?.type_short_name || room.room_type?.name || 'N/A',
-    clientNumber: room.max_guests || 0,
-    guestName: room.guest_name || room.guest_full_name || room.customer_name || 'Khách',
-    registrationCode: room.registration_code || room.booking_code || room.code || 'N/A',
-    arrivalDate: room.arrival_date || room.check_in_date || room.date_arrival || 'N/A',
-    departureDate: room.departure_date || room.check_out_date || room.date_departure || 'N/A',
-    company: room.company_name || room.company || room.agent || 'N/A',
-    floor: room.floor || 'Khác',
-    isLocked: room.is_locked || false,
-    isDirty: room.clean_status === 'Dirty',
-    isOccupied: room.is_occupied || false,
-    dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
-    isNameRed: !!room.is_departure,
-    isArrival: !!room.is_arrival,
-    isDeparture: !!room.is_departure,
-  }))
+  return rawRoomsData.value
+    .map((room) => ({
+      roomName: room.room_number,
+      roomType: room.room_type?.type_short_name || room.room_type?.name || 'N/A',
+      clientNumber: room.max_guests || 0,
+      guestName: room.guest_name || room.guest_full_name || room.customer_name || 'Khách',
+      registrationCode: room.registration_code || room.booking_code || room.code || 'N/A',
+      arrivalDate: room.arrival_date || room.check_in_date || room.date_arrival || 'N/A',
+      departureDate: room.departure_date || room.check_out_date || room.date_departure || 'N/A',
+      company: room.company_name || room.company || room.agent || 'N/A',
+      floor: room.floor || 'Khác',
+      isLocked: room.is_locked || false,
+      isDirty: room.clean_status === 'Dirty',
+      isOccupied: room.is_occupied || false,
+      dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
+      isNameRed: !!room.is_departure,
+      isArrival: !!room.is_arrival,
+      isDeparture: !!room.is_departure,
+    }))
+    .sort((a, b) =>
+      String(a.roomName).localeCompare(String(b.roomName), undefined, {
+        numeric: true,
+      })
+    )
+    .map((row, index) => ({
+      ...row,
+      order: index + 1,
+    }))
 })
 
 // 2. Gọi API để lấy danh sách từ Database
@@ -279,6 +289,7 @@ onMounted(() => {
             <table class="data-table">
               <thead>
                 <tr>
+                  <th>STT</th>
                   <th>Phòng</th>
                   <th>Loại</th>
                   <th>SL khách</th>
@@ -293,6 +304,7 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr v-for="(row, index) in tableRows" :key="index" :class="roomRowClass(row)">
+                  <td>{{ row.order }}</td>
                   <td>
                     <span :class="['room-number-title', { 'color-alert-red': row.isNameRed }]">
                       {{ row.roomName }}
