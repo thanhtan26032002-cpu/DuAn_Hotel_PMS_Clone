@@ -1,6 +1,23 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
 // Khai báo kết nối dữ liệu mẩu từ cấu trúc thư mục của bạn
 import { mockData } from './mockData.js'
+// 1. Lấy dữ liệu từ bên back-end (Laravel) thông qua API
+const roomsData = ref([])
+// 2. Viết hàm dùng Axios để kết nối sang Laravel
+const fetchRooms = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/rooms');
+    roomsData.value = response.data; // Đổ dữ liệu JSON từ Laravel trả về vào biến rooms
+  } catch (error) {
+    console.error("Lỗi khi kết nối API Laravel:", error);
+  }
+};
+// 3. Ép giao diện chạy hàm lấy dữ liệu này ngay khi màn hình vừa tải xong (Render)
+onMounted(() => {
+  fetchRooms();
+});
 </script>
 
 <template>
