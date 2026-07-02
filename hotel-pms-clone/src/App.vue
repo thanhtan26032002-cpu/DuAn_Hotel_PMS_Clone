@@ -13,22 +13,21 @@ import RoomSchedule from './RoomSchedule.vue'
 import WorkingList from './WorkingList.vue'
 import Report from './Report.vue'
 
-// 1. Khai báo component mặc định khi vừa vào app
-const currentView = shallowRef(RoomMap)
+// 1. Gom tất cả component vào một Object để dễ quản lý
+const viewComponents = {
+  RoomMap, RoomAvailability, Booking, Company, GuestSearch,
+  HistoryLog, ManageRoom, RoomLock, RoomSchedule, WorkingList, Report
+}
 
-// 2. Hàm xử lý chuyển đổi
+// 2. Khai báo component mặc định
+const currentView = shallowRef(viewComponents['RoomMap'])
+
+// 3. Hàm xử lý chuyển đổi cực kỳ ngắn gọn
 const changeView = (viewName) => {
-  if (viewName === 'RoomMap') currentView.value = RoomMap
-  if (viewName == 'RoomAvailability') currentView.value = RoomAvailability
-  if (viewName == 'Booking') currentView.value = Booking
-  if (viewName == 'Company') currentView.value = Company
-  if (viewName == 'GuestSearch') currentView.value = GuestSearch
-  if (viewName == 'HistoryLog') currentView.value = HistoryLog
-  if (viewName == 'ManageRoom') currentView.value = ManageRoom
-  if (viewName == 'RoomLock') currentView.value = RoomLock
-  if (viewName == 'RoomSchedule') currentView.value = RoomSchedule
-  if (viewName == 'WorkingList') currentView.value = WorkingList
-  if (viewName == 'Report') currentView.value = Report
+  // Nếu viewName có tồn tại trong danh sách thì mới chuyển
+  if (viewComponents[viewName]) {
+    currentView.value = viewComponents[viewName]
+  }
 }
 </script>
 

@@ -1,23 +1,71 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
-// Khai báo kết nối dữ liệu mẩu từ cấu trúc thư mục của bạn
-import { mockData } from './mockData.js'
-// 1. Lấy dữ liệu từ bên back-end (Laravel) thông qua API
-const roomsData = ref([])
-// 2. Viết hàm dùng Axios để kết nối sang Laravel
+
+// 1. Biến lưu dữ liệu gốc (phẳng) từ API Laravel
+const rawRoomsData = ref([])
+
+// 2. Gọi API để lấy danh sách từ Database
 const fetchRooms = async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8000/api/rooms');
-    roomsData.value = response.data; // Đổ dữ liệu JSON từ Laravel trả về vào biến rooms
+    const response = await axios.get('http://127.0.0.1:8000/api/rooms')
+    rawRoomsData.value = response.data
   } catch (error) {
-    console.error("Lỗi khi kết nối API Laravel:", error);
+    console.error('Lỗi API Laravel:', error)
   }
-};
-// 3. Ép giao diện chạy hàm lấy dữ liệu này ngay khi màn hình vừa tải xong (Render)
+}
+
+// 3. XỬ LÝ DỮ LIỆU: Gom nhóm theo Tầng (floor) bằng computed
+const roomsDataGrouped = computed(() => {
+  const floorMap = {}
+
+  // Lặp qua mảng phẳng lấy từ MySQL
+  rawRoomsData.value.forEach((room) => {
+    const floorKey = room.floor || 'Khác' // Lấy cột floor trong DB
+
+    // Nếu tầng chưa tồn tại trong Object, tạo một mảng rỗng cho tầng đó
+    if (!floorMap[floorKey]) {
+      floorMap[floorKey] = []
+    }
+
+    // Ánh xạ dữ liệu cột MySQL -> Biến của file Vue để đẩy vào mảng
+    floorMap[floorKey].push({
+      roomName: room.room_number, // DB dùng room_number
+      // Nếu Backend có Join bảng, lấy type_short_name, nếu không thì tạm để trống
+      roomType: room.room_type?.type_short_name || 'N/A',
+      clientNumber: room.max_guests || 0, // DB dùng max_guests
+
+      // NOTE: Các trạng thái dưới đây DB chưa có cột trực tiếp (sẽ kết hợp bảng Bookings/Locks sau)
+      // Tạm thời fix cứng để giao diện không bị vỡ
+      isOccupied: false,
+      isClean: true,
+      isLocked: false,
+      dotColor: null,
+      isNameRed: false,
+    })
+  })
+
+  // Đóng gói lại thành mảng và Sắp xếp tầng từ thấp lên cao (4 -> 15)
+  return Object.keys(floorMap)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(key => {
+
+      // Sắp xếp các phòng trong tầng này từ bé đến lớn
+      const sortedRooms = floorMap[key].sort((roomA, roomB) => {
+        return String(roomA.roomName).localeCompare(String(roomB.roomName), undefined, { numeric: true });
+      });
+
+      return {
+        floorName: `${key}`,
+        rooms: sortedRooms // Trả về mảng phòng đã được sắp xếp
+      };
+    })
+})
+
+// 4. Chạy hàm lấy dữ liệu khi vừa mở trang
 onMounted(() => {
-  fetchRooms();
-});
+  fetchRooms()
+})
 </script>
 
 <template>
@@ -110,7 +158,7 @@ onMounted(() => {
 
     <main class="pms-main-viewport">
       <div class="pms-scrollable-canvas">
-        <div v-for="(floor, fIndex) in mockData" :key="fIndex" class="pms-floor-row">
+        <div v-for="(floor, fIndex) in roomsDataGrouped" :key="fIndex" class="pms-floor-row">
           <div class="pms-floor-sticky-header">
             <div class="floor-badge-icon">{{ floor.floorName }}</div>
           </div>

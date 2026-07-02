@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
-    public function danhsachPhong()
+    public function index()
     {
-        $rooms = Room::all();
-        return response()->json($rooms);
+       $rooms = \App\Models\Room::with('roomType')->get();
+       return response()->json($rooms);
     }
 }
