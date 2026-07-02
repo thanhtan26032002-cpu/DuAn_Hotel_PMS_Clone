@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 
-// 1. Biến lưu dữ liệu gốc (phẳng) từ API Laravel
+// 1. Biến lưu dữ liệu gốc từ API Laravel
 const rawRoomsData = ref([])
 
 // 2. Gọi API để lấy danh sách từ Database
@@ -15,50 +15,52 @@ const fetchRooms = async () => {
   }
 }
 
-// 3. XỬ LÝ DỮ LIỆU: Gom nhóm theo Tầng (floor) bằng computed
+// 3. XỬ LÝ DỮ LIỆU: Gom nhóm theo Tầng và ánh xạ các icon trạng thái theo hình
 const roomsDataGrouped = computed(() => {
   const floorMap = {}
 
-  // Lặp qua mảng phẳng lấy từ MySQL
   rawRoomsData.value.forEach((room) => {
-    const floorKey = room.floor || 'Khác' // Lấy cột floor trong DB
+    const floorKey = room.floor || 'Khác'
 
-    // Nếu tầng chưa tồn tại trong Object, tạo một mảng rỗng cho tầng đó
     if (!floorMap[floorKey]) {
       floorMap[floorKey] = []
     }
 
-    // Ánh xạ dữ liệu cột MySQL -> Biến của file Vue để đẩy vào mảng
+    // Ánh xạ dữ liệu cột MySQL -> Thuộc tính hiển thị trên giao diện Vue
     floorMap[floorKey].push({
-      roomName: room.room_number, // DB dùng room_number
-      // Nếu Backend có Join bảng, lấy type_short_name, nếu không thì tạm để trống
+      roomName: room.room_number,
       roomType: room.room_type?.type_short_name || 'N/A',
-      clientNumber: room.max_guests || 0, // DB dùng max_guests
+      clientNumber: room.max_guests || 0,
 
-      // NOTE: Các trạng thái dưới đây DB chưa có cột trực tiếp (sẽ kết hợp bảng Bookings/Locks sau)
-      // Tạm thời fix cứng để giao diện không bị vỡ
-      isOccupied: false,
-      isClean: true,
-      isLocked: false,
-      dotColor: null,
-      isNameRed: false,
+      // 🌟 TRẠNG THÁI KHÓA PHÒNG & VỆ SINH ĐỌC TỪ DB MỚI
+      isLocked: room.is_locked || false, // Hiện ổ khóa góc trái dưới nếu phòng bị khóa
+      isDirty: room.clean_status === 'Dirty', // Hiện cây chổi góc phải dưới nếu phòng bẩn
+      isOccupied: room.is_occupied || false, // Trạng thái phòng có khách (đổi nền xanh)
+
+      // 🌟 CHẤM MÀU GÓC TRÊN BÊN PHẢI (Theo yêu cầu mới của bạn)
+      // Chấm đỏ = Phòng đi hôm nay (is_departure) | Chấm xanh = Phòng đến hôm nay (is_arrival)
+      dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
+
+      // Cho chữ số phòng đổi sang màu đỏ luôn nếu là Phòng đi để làm nổi bật
+      isNameRed: room.is_departure ? true : false,
     })
   })
 
-  // Đóng gói lại thành mảng và Sắp xếp tầng từ thấp lên cao (4 -> 15)
+  // Sắp xếp các tầng từ thấp lên cao (ví dụ: tầng 4 -> tầng 15)
   return Object.keys(floorMap)
     .sort((a, b) => Number(a) - Number(b))
-    .map(key => {
-
-      // Sắp xếp các phòng trong tầng này từ bé đến lớn
+    .map((key) => {
+      // Sắp xếp các số phòng trong cùng một tầng từ nhỏ đến lớn
       const sortedRooms = floorMap[key].sort((roomA, roomB) => {
-        return String(roomA.roomName).localeCompare(String(roomB.roomName), undefined, { numeric: true });
-      });
+        return String(roomA.roomName).localeCompare(String(roomB.roomName), undefined, {
+          numeric: true,
+        })
+      })
 
       return {
         floorName: `${key}`,
-        rooms: sortedRooms // Trả về mảng phòng đã được sắp xếp
-      };
+        rooms: sortedRooms,
+      }
     })
 })
 
@@ -101,45 +103,57 @@ onMounted(() => {
       </div>
 
       <div class="sidebar-action-grid">
-        <button class="action-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v8M8 12h8" />
+
+        <button class="action-btn" title="Hóa đơn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 2H8a2 2 0 0 0-2 2v16l2-1 2 1 2-1 2 1 2-1 2 1V4a2 2 0 0 0-2-2z"></path>
+            <line x1="9" y1="8" x2="15" y2="8"></line>
+            <line x1="9" y1="12" x2="15" y2="12"></line>
           </svg>
         </button>
-        <button class="action-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
+
+        <button class="action-btn" title="Nhóm hóa đơn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 2h2a2 2 0 0 1 2 2v11l-2-1-2 1" opacity="0.65"></path>
+            <path d="M13 6H5a2 2 0 0 0-2 2v14l2-1 2 1 2-1 2 1 2-1 2 1V8a2 2 0 0 0-2-2z"></path>
+            <line x1="6" y1="11" x2="10" y2="11"></line>
+            <line x1="6" y1="15" x2="10" y2="15"></line>
           </svg>
         </button>
-        <button class="action-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
+
+
+        <button class="action-btn" title="Thêm mới">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
           </svg>
         </button>
-        <button class="action-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <line x1="3" y1="9" x2="21" y2="9" />
-            <line x1="9" y1="21" x2="9" y2="9" />
+
+        <button class="action-btn" title="Thông tin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
         </button>
-        <button class="action-btn" style="background-color: #87ceeb">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+
+
+        <button class="action-btn-blue" title="Tìm kiếm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
-        <button class="action-btn" style="background-color: #87ceeb">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
+
+        <button class="action-btn-blue" title="Trợ giúp">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
+
       </div>
 
       <div class="sidebar-toggle-group bottom-toggle">
@@ -150,9 +164,44 @@ onMounted(() => {
       </div>
 
       <div class="sidebar-setting">
-        <a href="#">
-          <img src="./logo/setting.svg" alt="Setting" class="icon-setting" />
-        </a>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon-setting"
+        >
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+          ></path>
+        </svg>
+      </div>
+
+      <div class="sidebar-toggle-group bottom-toggle">
+        <label class="switch-sidebar">
+          <input type="checkbox" checked />
+          <span class="slider-sidebar slider-view"></span>
+        </label>
+      </div>
+
+      <div class="sidebar-setting">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon-setting"
+        >
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+          ></path>
+        </svg>
       </div>
     </aside>
 
@@ -178,8 +227,8 @@ onMounted(() => {
                 <span class="room-type-sub">
                   {{ room.roomType }}
                   <template v-if="room.clientNumber > 0">
-                    - SL khách: {{ room.clientNumber }}</template
-                  >
+                    - SL khách: {{ room.clientNumber }}
+                  </template>
                 </span>
               </div>
 
@@ -197,19 +246,8 @@ onMounted(() => {
                 </svg>
               </div>
 
-              <div class="card-bottom-icon-right">
-                <svg v-if="room.isClean" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M19 8l-1.5-3.5L14 3l3.5-1.5L19 0l1.5 3.5L24 5l-3.5 1.5L19 8zm-7 2.5L8.5 4 5 10.5 1.5 4 5 4 8.5 0 12 10.5zm6 13.5l-1.5-3.5L13 17l3.5-1.5L18 12l1.5 3.5L23 17l-3.5 1.5L18 24z"
-                  />
-                </svg>
-                <svg
-                  v-else
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
+              <div v-if="room.isDirty" class="card-bottom-icon-right">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path
                     d="M12.5 18.5L20 11c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0l-7.5 7.5c-.8.8-1 2.2-.5 3.2l2.5 2.5c1 .5 2.4.3 3.5-.7z"
                     fill="#cbd5e1"
@@ -230,15 +268,13 @@ onMounted(() => {
 .hotel-pms-container {
   display: flex;
   width: 100%;
-  height: 100vh; /* Cố định chiều cao toàn màn hình */
+  height: 100vh;
   background-color: #f1f5f9;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
-  /* 🌟 QUAN TRỌNG: Chặn tuyệt đối cuộn ở đây để không lộ thanh cuộn thừa */
   overflow: hidden !important;
 }
 
-/* ==================== SỬA ĐỔI THANH SIDEBAR BÊN TRÁI ==================== */
+/* THANH SIDEBAR BÊN TRÁI */
 .pms-sidebar {
   width: 90px;
   height: 100%;
@@ -250,7 +286,7 @@ onMounted(() => {
   padding: 10px 10px;
   flex-shrink: 0;
   margin-top: 10px;
-  overflow-y: auto; /* Nếu sidebar dài thì tự nó cuộn thôi */
+  overflow-y: auto;
 }
 
 .sidebar-date-box {
@@ -266,7 +302,6 @@ onMounted(() => {
   background-color: #f8fafc;
 }
 
-/* ==================== GIAO DIỆN CÔNG TẮC SIDEBAR (DÙNG CHUNG CHUNG) ==================== */
 .sidebar-toggle-group {
   display: flex;
   justify-content: center;
@@ -277,14 +312,12 @@ onMounted(() => {
   margin-bottom: auto;
 }
 
-/* Ẩn ô checkbox mặc định */
 .switch-sidebar input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-/* Kích thước khung công tắc */
 .switch-sidebar {
   position: relative;
   display: inline-block;
@@ -292,7 +325,6 @@ onMounted(() => {
   height: 28px;
 }
 
-/* Rãnh trượt khi TẮT (Màu xám) */
 .slider-sidebar {
   position: absolute;
   cursor: pointer;
@@ -305,7 +337,6 @@ onMounted(() => {
   transition: 0.4s;
 }
 
-/* Cục tròn trượt */
 .slider-sidebar::before {
   position: absolute;
   content: '';
@@ -320,7 +351,6 @@ onMounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Định dạng chung cho chữ nằm trong nút */
 .slider-sidebar::after {
   position: absolute;
   top: 50%;
@@ -332,37 +362,32 @@ onMounted(() => {
   transition: 0.4s;
 }
 
-/* --- HIỆU ỨNG KHI BẬT (DÙNG CHUNG) --- */
 .switch-sidebar input:checked + .slider-sidebar {
-  background-color: #7dd3fc; /* Nền đổi màu xanh */
+  background-color: #7dd3fc;
 }
 .switch-sidebar input:checked + .slider-sidebar::before {
-  transform: translateX(72px); /* Cục tròn trượt qua phải */
+  transform: translateX(72px);
 }
 
-/* ==================== CHỮ RIÊNG CHO TỪNG NÚT ==================== */
-
-/* 1. NÚT TRÊN (slider-time) */
 .slider-time::after {
   content: 'Hiện tại';
-  right: 12px; /* Tắt -> Cục tròn bên trái -> Chữ nằm bên phải */
+  right: 12px;
 }
 .switch-sidebar input:checked + .slider-time::after {
   content: 'Tương lai';
   right: auto;
-  left: 10px; /* Bật -> Cục tròn bên phải -> Chữ nhảy sang trái */
+  left: 10px;
   color: white;
 }
 
-/* 2. NÚT DƯỚI (slider-view) */
 .slider-view::after {
   content: 'Lưới';
-  right: 18px; /* Tắt -> Chữ Lưới nằm phải (Căn lề sâu hơn 1 chút cho chữ ngắn) */
+  right: 18px;
 }
 .switch-sidebar input:checked + .slider-view::after {
   content: 'Bảng';
   right: auto;
-  left: 15px; /* Bật -> Chữ Bảng nhảy sang trái */
+  left: 15px;
   color: white;
 }
 
@@ -372,59 +397,10 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.toggle-label {
-  white-space: nowrap;
-}
-
-/* CSS Tùy biến nút Switch */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 28px;
-  height: 16px;
-}
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #cbd5e1;
-  transition: 0.2s;
-}
-.slider:before {
-  position: absolute;
-  content: '';
-  height: 12px;
-  width: 12px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: 0.2s;
-}
-input:checked + .slider {
-  background-color: #3b82f6;
-}
-input:checked + .slider:before {
-  transform: translateX(12px);
-}
-.slider.round {
-  border-radius: 16px;
-}
-.slider.round:before {
-  border-radius: 50%;
-}
-
 /* Khối thống kê ô xanh nước biển nhạt */
 .pms-stat-item {
   width: 100%;
-  background-color: #bae6fd; /* Màu nền xanh da trời nhạt nguyên bản */
+  background-color: #bae6fd;
   border-radius: 8px;
   padding: 5px 2px;
   text-align: center;
@@ -443,7 +419,7 @@ input:checked + .slider:before {
   font-weight: 800;
 }
 .stat-percent {
-  background-color: #e2e8f0; /* Riêng mục thống kê cuối có thể có màu nền khác biệt */
+  background-color: #e2e8f0;
 }
 
 /* Lưới chứa các nút tính năng */
@@ -455,34 +431,91 @@ input:checked + .slider:before {
   margin-top: 8px;
 }
 
-.action-btn {
+/* Định dạng chung cho nút chức năng */
+.action-btn,
+.action-btn-blue {
   aspect-ratio: 1;
   width: 100%;
   border-radius: 6px;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #475569;
   cursor: pointer;
   padding: 0;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
-.action-btn svg {
-  width: 16px;
-  height: 16px;
+
+/* Nút xám mặc định */
+.action-btn {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
 }
 .action-btn:hover {
   background-color: #e2e8f0;
-}
-.action-btn.active {
-  background-color: #2563eb;
-  color: #ffffff;
-  border-color: #2563eb;
+  color: #1e293b;
 }
 
-/* ==================== KHU VỰC HIỂN THỊ SƠ ĐỒ PHÒNG CHÍNH ==================== */
+/* Nút xanh tìm kiếm / trợ giúp */
+.action-btn-blue {
+  background-color: #bcdff6;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+}
+.action-btn-blue:hover {
+  background-color: #bae6fd;
+  color: #0c4a6e;
+}
+
+/* Ép kích thước SVG bằng nhau chuẩn chỉ */
+.action-btn svg,
+.action-btn-blue svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Icon cài đặt dưới cùng */
+.sidebar-setting {
+  margin-top: 10px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-setting {
+  height: 24px;
+  width: 24px;
+  color: #64748b;
+  transition: all 0.25s ease;
+}
+.sidebar-setting:hover .icon-setting {
+  transform: rotate(45deg);
+  color: #334155;
+}
+
+/* CSS cho icon Bánh răng cài đặt dưới đáy */
+.sidebar-setting {
+  margin-bottom: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-setting {
+  height: 24px;
+  width: 24px;
+  color: #64748b;
+  transition: transform 0.3s ease;
+}
+.sidebar-setting:hover .icon-setting {
+  transform: rotate(45deg); /* Hiệu ứng xoay nhẹ khi di chuột vào bánh răng cho sinh động */
+  color: #334155;
+}
+
+/* KHU VỰC HIỂN THỊ SƠ ĐỒ PHÒNG CHÍNH */
 .pms-main-viewport {
   flex: 1;
   padding: 12px;
@@ -492,18 +525,16 @@ input:checked + .slider:before {
 .pms-scrollable-canvas {
   width: 100%;
   height: 100%;
-  overflow-x: auto; /* Kéo trượt ngang ở cạnh đáy màn hình */
-  overflow-y: auto; /* Kéo trượt dọc khi danh sách tầng vượt quá chiều cao */
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
-/* Hàng ngang đại diện cho 1 tầng */
 .pms-floor-row {
   display: flex;
   margin-bottom: 6px;
-  width: max-content; /* Ngăn chặn rớt dòng, ép các thành phần trải dài vô tận ra bên phải */
+  width: max-content;
 }
 
-/* THUỘC TÍNH STICKY: Cố định cột số tầng luôn ở biên trái */
 .pms-floor-sticky-header {
   width: 48px;
   flex-shrink: 0;
@@ -513,7 +544,7 @@ input:checked + .slider:before {
   position: sticky;
   left: 0;
   z-index: 5;
-  background-color: #f1f5f9; /* Màu nền mờ đè che khuất các ô phòng khi kéo qua lại */
+  background-color: #f1f5f9;
   padding-right: 6px;
 }
 
@@ -530,10 +561,9 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 
-/* Danh sách các phòng liên tiếp */
 .pms-rooms-horizontal-list {
   display: flex;
-  gap: 5px; /* Khoảng cách khít sát nhau theo giao diện gốc */
+  gap: 5px;
 }
 
 /* CẤU TRÚC CHI TIẾT THẺ PHÒNG (ROOM CARD) */
@@ -548,22 +578,19 @@ input:checked + .slider:before {
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid #cbd5e1;
-  flex-shrink: 0; /* Giữ nguyên kích thước hình học khi co giãn màn hình */
+  flex-shrink: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-/* Trạng thái phòng có khách (Màu xanh nước biển nhạt) */
+/* Các trạng thái màu nền phòng */
 .pms-room-card.state-occupied {
   background-color: #bae6fd;
   border-color: #bae6fd;
 }
-
-/* Trạng thái phòng trống (Màu trắng tinh khôi) */
 .pms-room-card.state-vacant {
   background-color: #ffffff;
 }
 
-/* Tiêu đề chữ và mô tả bên trong phòng */
 .card-info-box {
   display: flex;
   flex-direction: column;
@@ -576,19 +603,18 @@ input:checked + .slider:before {
   line-height: 1.2;
 }
 
-/* Đổi màu đỏ cho số phòng đặc biệt */
 .room-number-title.color-alert-red {
-  color: #dc2626;
+  color: #dc2626; /* Số phòng đổi màu đỏ khi là phòng đi */
 }
 
 .room-type-sub {
   font-size: 12px;
-  color: #000000;
+  color: #475569;
   font-weight: 500;
   margin-top: 1px;
 }
 
-/* Chấm tròn báo hiệu góc trên bên phải */
+/* Chấm trạng thái góc trên bên phải */
 .card-status-dot {
   position: absolute;
   top: 6px;
@@ -598,34 +624,34 @@ input:checked + .slider:before {
   border-radius: 50%;
 }
 .card-status-dot.red {
-  background-color: #ef4444;
+  background-color: #ef4444; /* Phòng đi */
 }
 .card-status-dot.green {
-  background-color: #22c55e;
+  background-color: #22c55e; /* Phòng đến */
 }
 
-/* Định vị biểu tượng ổ khóa (Góc trái bên dưới) */
+/* Định vị biểu tượng ổ khóa (Góc trái dưới) */
 .card-bottom-icon-left {
   position: absolute;
   bottom: 5px;
   left: 8px;
   width: 14px;
   height: 14px;
-  color: #16a34a; /* Màu xanh lá chỉ báo an toàn */
+  color: #ef4444; /* Màu đỏ nổi bật cho ổ khóa bảo trì */
 }
 .card-bottom-icon-left svg {
   width: 100%;
   height: 100%;
 }
 
-/* Định vị biểu tượng dọn dẹp vệ sinh (Góc phải bên dưới) */
+/* Định vị biểu tượng cây chổi dọn dẹp (Góc phải dưới) */
 .card-bottom-icon-right {
   position: absolute;
   bottom: 5px;
   right: 8px;
   width: 15px;
   height: 15px;
-  color: #334155;
+  color: #64748b;
 }
 .card-bottom-icon-right svg {
   width: 100%;
@@ -633,7 +659,7 @@ input:checked + .slider:before {
   display: block;
 }
 
-/* TÙY BIẾN THANH KÉO (SCROLLBAR) Ở ĐÁY MÀN HÌNH THEO PHONG CÁCH HIỆN ĐẠI MẢNH */
+/* THANH KÉO (SCROLLBAR) MẢNH */
 .pms-scrollable-canvas::-webkit-scrollbar {
   height: 8px;
   width: 8px;
