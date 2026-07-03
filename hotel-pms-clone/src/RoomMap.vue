@@ -164,45 +164,38 @@ const displayNumberOrNA = (value) => {
   return value
 }
 
-const totalRooms = computed(() => rawRoomsData.value.length)
-const arrivalCount = computed(() => rawRoomsData.value.filter((room) => room.is_arrival).length)
-const departureCount = computed(() => rawRoomsData.value.filter((room) => room.is_departure).length)
-const occupiedCount = computed(() => rawRoomsData.value.filter((room) => room.is_occupied).length)
-const statsData = computed(() => {
-  const readyValues = ['Ready', 'Sẵn sàng', 'Clean', 'Cleaned']
-  const dirtyValues = ['Dirty', 'Bẩn', 'Not Ready']
-  const complimentary = rawRoomsData.value.filter((room) => room.is_complimentary || room.is_free || room.is_complimentary_room).length
-  const internalRooms = rawRoomsData.value.filter((room) => room.is_internal || room.room_type === 'Internal').length
-  const inspection = rawRoomsData.value.filter((room) => room.is_inspection || room.is_under_inspection).length
-  const lateCheckIn = rawRoomsData.value.filter((room) => room.is_late_check_in || room.late_check_in).length
-  const extraBeds = rawRoomsData.value.reduce((sum, room) => sum + Number(room.extra_beds || 0), 0)
-
-  return {
-    overview: {
-      arrivalForecast: arrivalCount.value,
-      arrivalActual: arrivalCount.value,
-      departureForecast: departureCount.value,
-      departureActual: departureCount.value,
-      occupiedActual: occupiedCount.value,
-      occupiedEndOfDay: occupiedCount.value,
-      total: totalRooms.value,
-    },
-    status: {
-      ready: rawRoomsData.value.filter((room) => readyValues.includes(room.clean_status)).length,
-      clean: rawRoomsData.value.filter((room) => readyValues.includes(room.clean_status)).length,
-      dirty: rawRoomsData.value.filter((room) => dirtyValues.includes(room.clean_status)).length,
-      occupied: occupiedCount.value,
-      vacant: rawRoomsData.value.filter((room) => !room.is_occupied).length,
-      locked: rawRoomsData.value.filter((room) => room.is_locked).length,
-      inspection,
-      lateCheckIn,
-      complimentary,
-      extraBeds,
-      internal: internalRooms,
-      sellable: totalRooms.value - (complimentary + internalRooms + rawRoomsData.value.filter((room) => room.is_locked).length),
-    },
-  }
+const roomStats = ref({
+  overview: {
+    arrivalForecast: 0,
+    arrivalActual: 0,
+    departureForecast: 0,
+    departureActual: 0,
+    occupiedActual: 0,
+    occupiedEndOfDay: 0,
+    total: 0,
+  },
+  status: {
+    ready: 0,
+    clean: 0,
+    dirty: 0,
+    occupied: 0,
+    vacant: 0,
+    locked: 0,
+    inspection: 0,
+    lateCheckIn: 0,
+    complimentary: 0,
+    extraBeds: 0,
+    internal: 0,
+    sellable: 0,
+    owner: 0,
+    dnd: 0,
+  },
 })
+const totalRooms = computed(() => roomStats.value.overview.total || rawRoomsData.value.length)
+const arrivalCount = computed(() => roomStats.value.overview.arrivalActual || 0)
+const departureCount = computed(() => roomStats.value.overview.departureActual || 0)
+const occupiedCount = computed(() => roomStats.value.overview.occupiedActual || 0)
+const statsData = computed(() => roomStats.value)
 const occupancyRate = computed(() => {
   if (!totalRooms.value) return 0
   return Math.round((occupiedCount.value / totalRooms.value) * 100)
@@ -257,6 +250,15 @@ const fetchRooms = async () => {
     rawRoomsData.value = response.data
   } catch (error) {
     console.error('Lỗi API Laravel:', error)
+  }
+}
+
+const fetchRoomStats = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/room-stats')
+    roomStats.value = response.data
+  } catch (error) {
+    console.error('Lỗi API thống kê:', error)
   }
 }
 
@@ -326,6 +328,7 @@ const roomRowClass = (room) => {
 // 4. Chạy hàm lấy dữ liệu khi vừa mở trang
 onMounted(() => {
   fetchRooms()
+  fetchRoomStats()
   startClock()
   document.addEventListener('click', handleDocumentClick)
 })
@@ -427,21 +430,21 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng đến</div>
-                    <div>{{ statsData.overview.arrivalForecast }}</div>
-                    <div>{{ statsData.overview.arrivalActual }}</div>
-                    <div>{{ statsData.overview.arrivalForecast + statsData.overview.arrivalActual }}</div>
+                    <div><span class="stats-pill stats-pill-success">{{ statsData.overview.arrivalForecast }}</span></div>
+                    <div><span class="stats-pill">{{ statsData.overview.arrivalActual }}</span></div>
+                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.arrivalForecast + statsData.overview.arrivalActual }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng đi</div>
-                    <div>{{ statsData.overview.departureForecast }}</div>
-                    <div>{{ statsData.overview.departureActual }}</div>
-                    <div>{{ statsData.overview.departureForecast + statsData.overview.departureActual }}</div>
+                    <div><span class="stats-pill stats-pill-danger">{{ statsData.overview.departureForecast }}</span></div>
+                    <div><span class="stats-pill">{{ statsData.overview.departureActual }}</span></div>
+                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.departureForecast + statsData.overview.departureActual }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng ở</div>
-                    <div>{{ statsData.overview.occupiedActual }}</div>
-                    <div>{{ statsData.overview.occupiedEndOfDay }}</div>
-                    <div>{{ statsData.overview.total }}</div>
+                    <div><span class="stats-pill">{{ statsData.overview.occupiedActual }}</span></div>
+                    <div><span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span></div>
+                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.total }}</span></div>
                   </div>
                 </div>
               </div>
@@ -449,46 +452,46 @@ onBeforeUnmount(() => {
                 <h4>Trạng thái phòng</h4>
                 <div class="stats-table">
                   <div class="stats-table-row stats-table-header">
-                    <div> </div>
-                    <div> </div>
-                    <div> </div>
-                    <div> </div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Sẵn sàng</div>
-                    <div>{{ statsData.status.ready }}</div>
+                    <div><span class="stats-pill stats-pill-success">{{ statsData.status.ready }}</span></div>
                     <div>Phòng trống</div>
-                    <div>{{ statsData.status.vacant }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.vacant }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Sạch</div>
-                    <div>{{ statsData.status.clean }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.clean }}</span></div>
                     <div>Phòng chiếm dụng</div>
-                    <div>{{ statsData.status.occupied }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.occupied }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng bẩn</div>
-                    <div>{{ statsData.status.dirty }}</div>
+                    <div><span class="stats-pill stats-pill-danger">{{ statsData.status.dirty }}</span></div>
                     <div>Không L.P</div>
-                    <div>{{ statsData.status.locked }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.locked }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>P. Tham quan</div>
-                    <div>{{ statsData.status.inspection }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.inspection }}</span></div>
                     <div>Nhận phòng muộn</div>
-                    <div>{{ statsData.status.lateCheckIn }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.lateCheckIn }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng miễn phí</div>
-                    <div>{{ statsData.status.complimentary }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.complimentary }}</span></div>
                     <div>Thêm giường</div>
-                    <div>{{ statsData.status.extraBeds }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.extraBeds }}</span></div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng nội bộ</div>
-                    <div>{{ statsData.status.internal }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.internal }}</span></div>
                     <div>Bán được</div>
-                    <div>{{ statsData.status.sellable }}</div>
+                    <div><span class="stats-pill">{{ statsData.status.sellable }}</span></div>
                   </div>
                 </div>
               </div>
@@ -498,7 +501,7 @@ onBeforeUnmount(() => {
                   <div class="summary-value">{{ statsData.overview.total }}</div>
                 </div>
                 <div class="stats-summary-item">
-                  <div class="summary-label">Phòng có thể bán</div>
+                  <div class="summary-label">Phòng bán được</div>
                   <div class="summary-value">{{ statsData.status.sellable }}</div>
                 </div>
                 <div class="stats-summary-item">
@@ -1120,14 +1123,40 @@ onBeforeUnmount(() => {
 
 .stats-table-row div {
   font-size: 13px;
-  color: #475569;
+  color: #334155;
+}
+
+.stats-pill {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 40px;
+  padding: 8px 10px;
+  border-radius: 9999px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.stats-pill-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stats-pill-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.stats-pill-neutral {
+  background: #e2e8f0;
 }
 
 .stats-summary-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 16px;
+  margin-top: 20px;
 }
 
 .stats-summary-item {
