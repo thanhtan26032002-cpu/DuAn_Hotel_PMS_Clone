@@ -12,7 +12,7 @@ const calendarOpen = ref(false)
 const calendarYear = ref(new Date().getFullYear())
 const calendarMonth = ref(new Date().getMonth())
 const dateTriggerRef = ref(null)
-const overlayStyle = ref({ top: '0px', left: '0px', width: '240px' })
+const overlayStyle = ref({ top: '0px', left: '0px', width: '300px', maxWidth: 'calc(100vw - 24px)' })
 
 const padNumber = (value) => String(value).padStart(2, '0')
 const currentDateTimeLabel = computed(() => {
@@ -107,7 +107,8 @@ const updateOverlayPosition = () => {
   overlayStyle.value = {
     top: `${rect.bottom + window.scrollY + 6}px`,
     left: `${rect.left + window.scrollX}px`,
-    width: `${rect.width}px`,
+    width: `300px`,
+    maxWidth: `calc(100vw - 24px)`,
   }
 }
 
@@ -635,8 +636,9 @@ onBeforeUnmount(() => {
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px;
-  padding: 14px;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 16px;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 16px;
