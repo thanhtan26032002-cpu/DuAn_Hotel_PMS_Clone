@@ -13,6 +13,7 @@ const calendarYear = ref(new Date().getFullYear())
 const calendarMonth = ref(new Date().getMonth())
 const dateTriggerRef = ref(null)
 const overlayStyle = ref({ top: '0px', left: '0px', width: '300px', maxWidth: 'calc(100vw - 24px)' })
+const isStatsModalOpen = ref(false)
 
 const padNumber = (value) => String(value).padStart(2, '0')
 const currentDateTimeLabel = computed(() => {
@@ -115,6 +116,12 @@ const updateOverlayPosition = () => {
 const handleDocumentClick = (event) => {
   const overlayEl = document.querySelector('.future-calendar-overlay')
   const triggerEl = dateTriggerRef.value
+  if (isStatsModalOpen.value) {
+    const modalEl = document.querySelector('.stats-modal')
+    if (modalEl && !modalEl.contains(event.target) && !triggerEl.contains(event.target)) {
+      isStatsModalOpen.value = false
+    }
+  }
   if (!overlayEl || !triggerEl) return
   if (!overlayEl.contains(event.target) && !triggerEl.contains(event.target)) {
     closeCalendar()
@@ -161,6 +168,41 @@ const totalRooms = computed(() => rawRoomsData.value.length)
 const arrivalCount = computed(() => rawRoomsData.value.filter((room) => room.is_arrival).length)
 const departureCount = computed(() => rawRoomsData.value.filter((room) => room.is_departure).length)
 const occupiedCount = computed(() => rawRoomsData.value.filter((room) => room.is_occupied).length)
+const statsData = computed(() => {
+  const readyValues = ['Ready', 'Sẵn sàng', 'Clean', 'Cleaned']
+  const dirtyValues = ['Dirty', 'Bẩn', 'Not Ready']
+  const complimentary = rawRoomsData.value.filter((room) => room.is_complimentary || room.is_free || room.is_complimentary_room).length
+  const internalRooms = rawRoomsData.value.filter((room) => room.is_internal || room.room_type === 'Internal').length
+  const inspection = rawRoomsData.value.filter((room) => room.is_inspection || room.is_under_inspection).length
+  const lateCheckIn = rawRoomsData.value.filter((room) => room.is_late_check_in || room.late_check_in).length
+  const extraBeds = rawRoomsData.value.reduce((sum, room) => sum + Number(room.extra_beds || 0), 0)
+
+  return {
+    overview: {
+      arrivalForecast: arrivalCount.value,
+      arrivalActual: arrivalCount.value,
+      departureForecast: departureCount.value,
+      departureActual: departureCount.value,
+      occupiedActual: occupiedCount.value,
+      occupiedEndOfDay: occupiedCount.value,
+      total: totalRooms.value,
+    },
+    status: {
+      ready: rawRoomsData.value.filter((room) => readyValues.includes(room.clean_status)).length,
+      clean: rawRoomsData.value.filter((room) => readyValues.includes(room.clean_status)).length,
+      dirty: rawRoomsData.value.filter((room) => dirtyValues.includes(room.clean_status)).length,
+      occupied: occupiedCount.value,
+      vacant: rawRoomsData.value.filter((room) => !room.is_occupied).length,
+      locked: rawRoomsData.value.filter((room) => room.is_locked).length,
+      inspection,
+      lateCheckIn,
+      complimentary,
+      extraBeds,
+      internal: internalRooms,
+      sellable: totalRooms.value - (complimentary + internalRooms + rawRoomsData.value.filter((room) => room.is_locked).length),
+    },
+  }
+})
 const occupancyRate = computed(() => {
   if (!totalRooms.value) return 0
   return Math.round((occupiedCount.value / totalRooms.value) * 100)
@@ -361,10 +403,117 @@ onBeforeUnmount(() => {
         <span class="stat-value">{{ occupiedCount }} / {{ totalRooms }}</span>
       </div>
 
-      <div class="pms-stat-item stat-percent">
+      <button type="button" class="pms-stat-item stat-percent stat-button" @click.stop="isStatsModalOpen = true">
         <span class="stat-title">Thống kê</span>
         <span class="stat-value">{{ occupancyRate }}%</span>
-      </div>
+      </button>
+
+      <teleport to="body">
+        <div v-if="isStatsModalOpen" class="stats-backdrop" @click.self="isStatsModalOpen = false">
+          <div class="stats-modal" @click.stop>
+            <div class="stats-modal-header">
+              <span>Thống kê</span>
+              <button type="button" class="stats-modal-close" @click="isStatsModalOpen = false">×</button>
+            </div>
+            <div class="stats-modal-body">
+              <div class="stats-section">
+                <h4>Tổng quan</h4>
+                <div class="stats-table">
+                  <div class="stats-table-row stats-table-header">
+                    <div></div>
+                    <div>Dự kiến</div>
+                    <div>Thực tế</div>
+                    <div>Tổng cộng</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng đến</div>
+                    <div>{{ statsData.overview.arrivalForecast }}</div>
+                    <div>{{ statsData.overview.arrivalActual }}</div>
+                    <div>{{ statsData.overview.arrivalForecast + statsData.overview.arrivalActual }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng đi</div>
+                    <div>{{ statsData.overview.departureForecast }}</div>
+                    <div>{{ statsData.overview.departureActual }}</div>
+                    <div>{{ statsData.overview.departureForecast + statsData.overview.departureActual }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng ở</div>
+                    <div>{{ statsData.overview.occupiedActual }}</div>
+                    <div>{{ statsData.overview.occupiedEndOfDay }}</div>
+                    <div>{{ statsData.overview.total }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="stats-section">
+                <h4>Trạng thái phòng</h4>
+                <div class="stats-table">
+                  <div class="stats-table-row stats-table-header">
+                    <div> </div>
+                    <div> </div>
+                    <div> </div>
+                    <div> </div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Sẵn sàng</div>
+                    <div>{{ statsData.status.ready }}</div>
+                    <div>Phòng trống</div>
+                    <div>{{ statsData.status.vacant }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Sạch</div>
+                    <div>{{ statsData.status.clean }}</div>
+                    <div>Phòng chiếm dụng</div>
+                    <div>{{ statsData.status.occupied }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng bẩn</div>
+                    <div>{{ statsData.status.dirty }}</div>
+                    <div>Không L.P</div>
+                    <div>{{ statsData.status.locked }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>P. Tham quan</div>
+                    <div>{{ statsData.status.inspection }}</div>
+                    <div>Nhận phòng muộn</div>
+                    <div>{{ statsData.status.lateCheckIn }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng miễn phí</div>
+                    <div>{{ statsData.status.complimentary }}</div>
+                    <div>Thêm giường</div>
+                    <div>{{ statsData.status.extraBeds }}</div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Phòng nội bộ</div>
+                    <div>{{ statsData.status.internal }}</div>
+                    <div>Bán được</div>
+                    <div>{{ statsData.status.sellable }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="stats-section stats-summary-row">
+                <div class="stats-summary-item">
+                  <div class="summary-label">Tổng phòng</div>
+                  <div class="summary-value">{{ statsData.overview.total }}</div>
+                </div>
+                <div class="stats-summary-item">
+                  <div class="summary-label">Phòng có thể bán</div>
+                  <div class="summary-value">{{ statsData.status.sellable }}</div>
+                </div>
+                <div class="stats-summary-item">
+                  <div class="summary-label">Phòng chiếm dụng</div>
+                  <div class="summary-value">{{ statsData.status.occupied }}</div>
+                </div>
+                <div class="stats-summary-item">
+                  <div class="summary-label">Phòng miễn phí</div>
+                  <div class="summary-value">{{ statsData.status.complimentary }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </teleport>
 
       <div class="sidebar-action-grid">
 
@@ -845,6 +994,159 @@ onBeforeUnmount(() => {
   gap: 6px;
   width: 100%;
   margin-top: 8px;
+}
+
+.stat-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.stats-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10000;
+}
+
+.stats-modal {
+  width: min(720px, 100%);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.stats-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.stats-modal-close {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.stats-modal-body {
+  padding: 20px;
+}
+
+.stats-section {
+  margin-bottom: 18px;
+}
+
+.stats-section h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #0f172a;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stats-grid-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stats-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.stats-card.small {
+  padding: 12px 14px;
+}
+
+.stats-card-title {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.stats-card-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.stats-value-green {
+  color: #16a34a;
+}
+
+.stats-value-red {
+  color: #dc2626;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stats-table-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+  align-items: center;
+}
+
+.stats-table-header {
+  font-weight: 700;
+  color: #334155;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.stats-table-row div {
+  font-size: 13px;
+  color: #475569;
+}
+
+.stats-summary-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.stats-summary-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 /* Định dạng chung cho nút chức năng */
