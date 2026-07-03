@@ -1,15 +1,67 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import axios from 'axios'
 
 // 1. Biến lưu dữ liệu gốc từ API Laravel
 const rawRoomsData = ref([])
 const isGridMode = ref(true)
+const isFutureMode = ref(false)
 const currentDateTime = ref(new Date())
+const selectedFutureDate = ref('')
+const calendarOpen = ref(false)
+const calendarYear = ref(new Date().getFullYear())
+const calendarMonth = ref(new Date().getMonth())
+const dateTriggerRef = ref(null)
+const overlayStyle = ref({ top: '0px', left: '0px', width: '240px' })
 
 const padNumber = (value) => String(value).padStart(2, '0')
 const currentDateTimeLabel = computed(() => {
   const date = currentDateTime.value
+  return `${padNumber(date.getDate())}/${padNumber(date.getMonth() + 1)}/${date.getFullYear()}`
+})
+
+const minFutureDate = computed(() => {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(date.getDate())}`
+})
+
+const weekDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+
+const calendarMonthLabel = computed(() => {
+  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
+  return `${monthNames[calendarMonth.value]} ${calendarYear.value}`
+})
+
+const currentDate = computed(() => new Date())
+
+const calendarDays = computed(() => {
+  const year = calendarYear.value
+  const month = calendarMonth.value
+  const firstDay = new Date(year, month, 1)
+  const firstWeekday = firstDay.getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const days = []
+
+  for (let i = 0; i < firstWeekday; i += 1) {
+    days.push({ key: `blank-${month}-${i}`, date: null, disabled: true })
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const fullDate = new Date(year, month, day)
+    const isoDate = `${year}-${padNumber(month + 1)}-${padNumber(day)}`
+    const disabled = fullDate <= new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), currentDate.value.getDate())
+    days.push({ key: `day-${isoDate}`, date: isoDate, disabled })
+  }
+
+  return days
+})
+
+const futureDateLabel = computed(() => {
+  if (!selectedFutureDate.value) {
+    return 'Chọn ngày'
+  }
+  const date = new Date(selectedFutureDate.value)
   return `${padNumber(date.getDate())}/${padNumber(date.getMonth() + 1)}/${date.getFullYear()}`
 })
 
@@ -19,6 +71,83 @@ const displayValue = (value) => {
   }
   return value
 }
+
+const openFutureCalendar = async () => {
+  if (!isFutureMode.value) {
+    isFutureMode.value = true
+  }
+  calendarOpen.value = true
+  await nextTick()
+  updateOverlayPosition()
+}
+
+const toggleCalendar = async () => {
+  if (!isFutureMode.value) {
+    isFutureMode.value = true
+    calendarOpen.value = true
+    await nextTick()
+    updateOverlayPosition()
+    return
+  }
+  calendarOpen.value = !calendarOpen.value
+  if (calendarOpen.value) {
+    await nextTick()
+    updateOverlayPosition()
+  }
+}
+
+const closeCalendar = () => {
+  calendarOpen.value = false
+}
+
+const updateOverlayPosition = () => {
+  const triggerEl = dateTriggerRef.value
+  if (!triggerEl) return
+  const rect = triggerEl.getBoundingClientRect()
+  overlayStyle.value = {
+    top: `${rect.bottom + window.scrollY + 6}px`,
+    left: `${rect.left + window.scrollX}px`,
+    width: `${rect.width}px`,
+  }
+}
+
+const handleDocumentClick = (event) => {
+  const overlayEl = document.querySelector('.future-calendar-overlay')
+  const triggerEl = dateTriggerRef.value
+  if (!overlayEl || !triggerEl) return
+  if (!overlayEl.contains(event.target) && !triggerEl.contains(event.target)) {
+    closeCalendar()
+  }
+}
+
+const goToPrevMonth = () => {
+  if (calendarMonth.value === 0) {
+    calendarMonth.value = 11
+    calendarYear.value -= 1
+  } else {
+    calendarMonth.value -= 1
+  }
+}
+
+const goToNextMonth = () => {
+  if (calendarMonth.value === 11) {
+    calendarMonth.value = 0
+    calendarYear.value += 1
+  } else {
+    calendarMonth.value += 1
+  }
+}
+
+const selectFutureDate = (isoDate) => {
+  selectedFutureDate.value = isoDate
+  closeCalendar()
+}
+
+watch(isFutureMode, (enabled) => {
+  if (!enabled) {
+    closeCalendar()
+  }
+})
 
 const displayNumberOrNA = (value) => {
   if (value === null || value === undefined) {
@@ -155,21 +284,63 @@ const roomRowClass = (room) => {
 onMounted(() => {
   fetchRooms()
   startClock()
+  document.addEventListener('click', handleDocumentClick)
 })
 
 onBeforeUnmount(() => {
   stopClock()
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>
 
 <template>
   <div class="hotel-pms-container">
     <aside class="pms-sidebar">
-      <div class="sidebar-date-box">{{ currentDateTimeLabel }}</div>
+      <div
+        ref="dateTriggerRef"
+        class="sidebar-date-box future-date-trigger"
+        :class="{ 'future-selected': isFutureMode }"
+        @click="openFutureCalendar"
+      >
+        <span v-if="!isFutureMode">{{ currentDateTimeLabel }}</span>
+        <span v-else>{{ futureDateLabel }}</span>
+      </div>
+
+      <teleport to="body">
+        <div
+          v-if="isFutureMode && calendarOpen"
+          class="future-calendar-overlay"
+          :style="overlayStyle"
+        >
+          <div class="calendar-header">
+            <button type="button" class="calendar-nav" @click.stop="goToPrevMonth">‹</button>
+            <span class="calendar-title">{{ calendarMonthLabel }}</span>
+            <button type="button" class="calendar-nav" @click.stop="goToNextMonth">›</button>
+          </div>
+          <div class="calendar-grid-weekdays">
+            <span v-for="day in weekDays" :key="day" class="calendar-weekday">{{ day }}</span>
+          </div>
+          <div class="calendar-grid-days">
+            <button
+              v-for="day in calendarDays"
+              :key="day.key"
+              type="button"
+              :class="[
+                'calendar-day',
+                { disabled: day.disabled, selected: day.date === selectedFutureDate }
+              ]"
+              :disabled="day.disabled"
+              @click="selectFutureDate(day.date)"
+            >
+              {{ day.date ? day.date.split('-')[2] : '' }}
+            </button>
+          </div>
+        </div>
+      </teleport>
 
       <div class="sidebar-toggle-group">
         <label class="switch-sidebar">
-          <input type="checkbox" />
+          <input type="checkbox" v-model="isFutureMode" />
           <span class="slider-sidebar slider-time"></span>
         </label>
       </div>
@@ -416,6 +587,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   margin-top: 10px;
   overflow-y: auto;
+  overflow-x: visible;
 }
 
 .sidebar-date-box {
@@ -429,6 +601,119 @@ onBeforeUnmount(() => {
   width: 100%;
   text-align: center;
   background-color: #f8fafc;
+}
+
+.sidebar-date-box.future-selected {
+  background-color: #fff7ed;
+  border-color: #fbbf24;
+}
+
+.future-date-panel {
+  width: 100%;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.future-date-trigger {
+  cursor: pointer;
+  position: relative;
+}
+
+.future-date-button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.future-calendar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+  z-index: 9999;
+}
+
+.future-calendar-overlay::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 28px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  transform: rotate(45deg);
+  border-left: 1px solid #cbd5e1;
+  border-top: 1px solid #cbd5e1;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.calendar-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.calendar-nav {
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+.calendar-grid-weekdays,
+.calendar-grid-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-weekday {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: #475569;
+}
+
+.calendar-day {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.calendar-day.selected {
+  background: #38bdf8;
+  color: white;
+}
+
+.calendar-day.disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
 .sidebar-toggle-group {
