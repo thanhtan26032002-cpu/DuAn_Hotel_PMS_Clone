@@ -112,7 +112,7 @@ onMounted(() => {
 <template>
   <div class="hotel-pms-container">
     <aside class="pms-sidebar">
-      <div class="sidebar-date-box">16 / 06 / 2026</div>
+      <div class="sidebar-date-box">03/07/2026</div>
 
       <div class="sidebar-toggle-group">
         <label class="switch-sidebar">
