@@ -48,10 +48,29 @@ class RoomController extends Controller
             ->count();
 
         $extraBeds = DB::table('booking_rooms')->where('extra_bed', true)->count();
+
+        $oosCount = 0;
+        $oooCount = 0;
         $lockedRooms = 0;
         if (DB::getSchemaBuilder()->hasTable('room_locks')) {
-            $lockedRooms = DB::table('room_locks')->where('status', 'Locked')->count();
+            $oosCount = DB::table('room_locks')
+                ->where('lock_type', 'OOS')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->count();
+            $oooCount = DB::table('room_locks')
+                ->where('lock_type', 'OOO')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->count();
+            $lockedRooms = DB::table('room_locks')
+                ->whereNotNull('lock_type')
+                ->whereDate('start_date', '<=', $today)
+                ->whereDate('end_date', '>=', $today)
+                ->count();
         }
+
+        $occupiedPercent = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 0) : 0;
 
         return response()->json([
             'overview' => [
@@ -61,6 +80,7 @@ class RoomController extends Controller
                 'departureActual' => $departuresToday,
                 'occupiedActual' => $occupiedRooms,
                 'occupiedEndOfDay' => $occupiedRooms,
+                'occupiedTotal' => 0,
                 'total' => $totalRooms,
             ],
             'status' => [
@@ -75,9 +95,11 @@ class RoomController extends Controller
                 'complimentary' => $complimentaryRooms,
                 'extraBeds' => $extraBeds,
                 'internal' => $internalRooms,
-                'sellable' => max(0, $totalRooms - $internalRooms - $ownerRooms),
                 'owner' => $ownerRooms,
                 'dnd' => $dndRooms,
+                'oos' => $oosCount,
+                'ooo' => $oooCount,
+                'occupiedPercent' => $occupiedPercent,
             ],
         ]);
     }

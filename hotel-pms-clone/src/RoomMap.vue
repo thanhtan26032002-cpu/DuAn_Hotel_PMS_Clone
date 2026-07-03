@@ -172,6 +172,7 @@ const roomStats = ref({
     departureActual: 0,
     occupiedActual: 0,
     occupiedEndOfDay: 0,
+    occupiedTotal: 0,
     total: 0,
   },
   status: {
@@ -186,9 +187,11 @@ const roomStats = ref({
     complimentary: 0,
     extraBeds: 0,
     internal: 0,
-    sellable: 0,
     owner: 0,
     dnd: 0,
+    ooo: 0,
+    oos: 0,
+    occupiedPercent: 0,
   },
 })
 const totalRooms = computed(() => roomStats.value.overview.total || rawRoomsData.value.length)
@@ -197,6 +200,9 @@ const departureCount = computed(() => roomStats.value.overview.departureActual |
 const occupiedCount = computed(() => roomStats.value.overview.occupiedActual || 0)
 const statsData = computed(() => roomStats.value)
 const occupancyRate = computed(() => {
+  if (roomStats.value.status && roomStats.value.status.occupiedPercent !== undefined) {
+    return roomStats.value.status.occupiedPercent
+  }
   if (!totalRooms.value) return 0
   return Math.round((occupiedCount.value / totalRooms.value) * 100)
 })
@@ -444,7 +450,7 @@ onBeforeUnmount(() => {
                     <div>Phòng ở</div>
                     <div><span class="stats-pill">{{ statsData.overview.occupiedActual }}</span></div>
                     <div><span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span></div>
-                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.total }}</span></div>
+                    <div><span class="stats-pill stats-pill-neutral">0</span></div>
                   </div>
                 </div>
               </div>
@@ -484,14 +490,20 @@ onBeforeUnmount(() => {
                   <div class="stats-table-row">
                     <div>Phòng miễn phí</div>
                     <div><span class="stats-pill">{{ statsData.status.complimentary }}</span></div>
-                    <div>Thêm giường</div>
-                    <div><span class="stats-pill">{{ statsData.status.extraBeds }}</span></div>
-                  </div>
-                  <div class="stats-table-row">
                     <div>Phòng nội bộ</div>
                     <div><span class="stats-pill">{{ statsData.status.internal }}</span></div>
-                    <div>Bán được</div>
-                    <div><span class="stats-pill">{{ statsData.status.sellable }}</span></div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>OOO</div>
+                    <div><span class="stats-pill">{{ statsData.status.ooo }}</span></div>
+                    <div>OOS</div>
+                    <div><span class="stats-pill">{{ statsData.status.oos }}</span></div>
+                  </div>
+                  <div class="stats-table-row">
+                    <div>Thêm giường</div>
+                    <div><span class="stats-pill">{{ statsData.status.extraBeds }}</span></div>
+                    <div></div>
+                    <div></div>
                   </div>
                 </div>
               </div>
@@ -501,16 +513,16 @@ onBeforeUnmount(() => {
                   <div class="summary-value">{{ statsData.overview.total }}</div>
                 </div>
                 <div class="stats-summary-item">
-                  <div class="summary-label">Phòng bán được</div>
-                  <div class="summary-value">{{ statsData.status.sellable }}</div>
-                </div>
-                <div class="stats-summary-item">
-                  <div class="summary-label">Phòng chiếm dụng</div>
-                  <div class="summary-value">{{ statsData.status.occupied }}</div>
+                  <div class="summary-label">Chiếm dụng</div>
+                  <div class="summary-value">{{ statsData.status.occupiedPercent }}%</div>
                 </div>
                 <div class="stats-summary-item">
                   <div class="summary-label">Phòng miễn phí</div>
                   <div class="summary-value">{{ statsData.status.complimentary }}</div>
+                </div>
+                <div class="stats-summary-item">
+                  <div class="summary-label">Thêm giường</div>
+                  <div class="summary-value">{{ statsData.status.extraBeds }}</div>
                 </div>
               </div>
             </div>
@@ -1014,16 +1026,25 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 24px 16px;
   z-index: 10000;
+  overflow-y: auto;
 }
 
 .stats-modal {
-  width: min(720px, 100%);
+  position: relative;
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
   overflow: hidden;
+}
+
+.stats-modal-body {
+  padding: 20px;
+  max-height: calc(100vh - 148px);
+  overflow-y: auto;
 }
 
 .stats-modal-header {
@@ -1157,6 +1178,9 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-top: 20px;
+}
+.stats-summary-item {
+  min-width: 0;
 }
 
 .stats-summary-item {
