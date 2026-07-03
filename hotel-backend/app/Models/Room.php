@@ -13,4 +13,10 @@ class Room extends Model
     {
         return $this->belongsTo(RoomType::class, 'room_type_id', 'id');
     }
+
+    // Hàm này giúp nối bảng rooms với bảng room_forms
+    public function roomForm()
+    {
+        return $this->belongsTo(RoomForm::class, 'room_form_id', 'id');
+    }
 }

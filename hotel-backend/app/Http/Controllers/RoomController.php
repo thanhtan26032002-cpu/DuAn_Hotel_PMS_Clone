@@ -9,7 +9,7 @@ class RoomController extends Controller
 {
     public function index()
     {
-       $rooms = \App\Models\Room::with('roomType')->get();
+       $rooms = Room::with(['roomType', 'roomForm'])->get();
        return response()->json($rooms);
     }
 }

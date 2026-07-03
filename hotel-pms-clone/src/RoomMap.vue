@@ -1,23 +1,57 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import axios from 'axios'
 
 // 1. Biến lưu dữ liệu gốc từ API Laravel
 const rawRoomsData = ref([])
 const isGridMode = ref(true)
+const currentDateTime = ref(new Date())
+
+const padNumber = (value) => String(value).padStart(2, '0')
+const currentDateTimeLabel = computed(() => {
+  const date = currentDateTime.value
+  return `${padNumber(date.getDate())}/${padNumber(date.getMonth() + 1)}/${date.getFullYear()}`
+})
+
+const displayValue = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return 'N/A'
+  }
+  return value
+}
+
+const displayNumberOrNA = (value) => {
+  if (value === null || value === undefined) {
+    return 'N/A'
+  }
+  return value
+}
+
+const totalRooms = computed(() => rawRoomsData.value.length)
+const arrivalCount = computed(() => rawRoomsData.value.filter((room) => room.is_arrival).length)
+const departureCount = computed(() => rawRoomsData.value.filter((room) => room.is_departure).length)
+const occupiedCount = computed(() => rawRoomsData.value.filter((room) => room.is_occupied).length)
+const occupancyRate = computed(() => {
+  if (!totalRooms.value) return 0
+  return Math.round((occupiedCount.value / totalRooms.value) * 100)
+})
 
 const tableRows = computed(() => {
   return rawRoomsData.value
     .map((room) => ({
       roomName: room.room_number,
-      roomType: room.room_type?.type_short_name || room.room_type?.name || 'N/A',
-      clientNumber: room.max_guests || 0,
-      guestName: room.guest_name || room.guest_full_name || room.customer_name || 'Khách',
-      registrationCode: room.registration_code || room.booking_code || room.code || 'N/A',
-      arrivalDate: room.arrival_date || room.check_in_date || room.date_arrival || 'N/A',
-      departureDate: room.departure_date || room.check_out_date || room.date_departure || 'N/A',
-      company: room.company_name || room.company || room.agent || 'N/A',
-      floor: room.floor || 'Khác',
+      roomForm: displayValue(room.room_form?.form_name || room.room_form_name || room.room_form),
+      roomType: displayValue(room.room_type?.type_short_name || room.room_type?.type_name || room.room_type?.name),
+      clientNumber: displayNumberOrNA(room.max_guests),
+      extraBeds: displayNumberOrNA(room.extra_beds),
+      linkedRoomNumber: displayValue(room.linked_room_number),
+      guestName: displayValue(room.guest_name || room.guest_full_name || room.customer_name),
+      registrationCode: displayValue(room.registration_code || room.booking_code || room.code),
+      arrivalDate: displayValue(room.arrival_date || room.check_in_date || room.date_arrival),
+      departureDate: displayValue(room.departure_date || room.check_out_date || room.date_departure),
+      company: displayValue(room.company_name || room.company || room.agent),
+      floor: displayValue(room.floor),
+      note: displayValue(room.note || room.notes),
       isLocked: room.is_locked || false,
       isDirty: room.clean_status === 'Dirty',
       isOccupied: room.is_occupied || false,
@@ -25,6 +59,13 @@ const tableRows = computed(() => {
       isNameRed: !!room.is_departure,
       isArrival: !!room.is_arrival,
       isDeparture: !!room.is_departure,
+      statusText: room.is_departure
+        ? 'Đã đi'
+        : room.is_arrival
+        ? 'Đã đến'
+        : room.is_occupied
+        ? 'Đang ở'
+        : 'Trống',
     }))
     .sort((a, b) =>
       String(a.roomName).localeCompare(String(b.roomName), undefined, {
@@ -47,6 +88,21 @@ const fetchRooms = async () => {
   }
 }
 
+let dateTimer = null
+const startClock = () => {
+  currentDateTime.value = new Date()
+  dateTimer = setInterval(() => {
+    currentDateTime.value = new Date()
+  }, 1000)
+}
+
+const stopClock = () => {
+  if (dateTimer) {
+    clearInterval(dateTimer)
+    dateTimer = null
+  }
+}
+
 // 3. XỬ LÝ DỮ LIỆU: Gom nhóm theo Tầng và ánh xạ các icon trạng thái theo hình
 const roomsDataGrouped = computed(() => {
   const floorMap = {}
@@ -61,28 +117,20 @@ const roomsDataGrouped = computed(() => {
     // Ánh xạ dữ liệu cột MySQL -> Thuộc tính hiển thị trên giao diện Vue
     floorMap[floorKey].push({
       roomName: room.room_number,
-      roomType: room.room_type?.type_short_name || 'N/A',
+      roomForm: room.room_form?.form_name || room.room_form_name || room.room_form || 'N/A',
+      roomType: room.room_type?.type_short_name || room.room_type?.type_name || 'N/A',
       clientNumber: room.max_guests || 0,
-
-      // 🌟 TRẠNG THÁI KHÓA PHÒNG & VỆ SINH ĐỌC TỪ DB MỚI
-      isLocked: room.is_locked || false, // Hiện ổ khóa góc trái dưới nếu phòng bị khóa
-      isDirty: room.clean_status === 'Dirty', // Hiện cây chổi góc phải dưới nếu phòng bẩn
-      isOccupied: room.is_occupied || false, // Trạng thái phòng có khách (đổi nền xanh)
-
-      // 🌟 CHẤM MÀU GÓC TRÊN BÊN PHẢI (Theo yêu cầu mới của bạn)
-      // Chấm đỏ = Phòng đi hôm nay (is_departure) | Chấm xanh = Phòng đến hôm nay (is_arrival)
+      isLocked: room.is_locked || false,
+      isDirty: room.clean_status === 'Dirty',
+      isOccupied: room.is_occupied || false,
       dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
-
-      // Cho chữ số phòng đổi sang màu đỏ luôn nếu là Phòng đi để làm nổi bật
       isNameRed: room.is_departure ? true : false,
     })
   })
 
-  // Sắp xếp các tầng từ thấp lên cao (ví dụ: tầng 4 -> tầng 15)
   return Object.keys(floorMap)
     .sort((a, b) => Number(a) - Number(b))
     .map((key) => {
-      // Sắp xếp các số phòng trong cùng một tầng từ nhỏ đến lớn
       const sortedRooms = floorMap[key].sort((roomA, roomB) => {
         return String(roomA.roomName).localeCompare(String(roomB.roomName), undefined, {
           numeric: true,
@@ -106,13 +154,18 @@ const roomRowClass = (room) => {
 // 4. Chạy hàm lấy dữ liệu khi vừa mở trang
 onMounted(() => {
   fetchRooms()
+  startClock()
+})
+
+onBeforeUnmount(() => {
+  stopClock()
 })
 </script>
 
 <template>
   <div class="hotel-pms-container">
     <aside class="pms-sidebar">
-      <div class="sidebar-date-box">03/07/2026</div>
+      <div class="sidebar-date-box">{{ currentDateTimeLabel }}</div>
 
       <div class="sidebar-toggle-group">
         <label class="switch-sidebar">
@@ -123,22 +176,22 @@ onMounted(() => {
 
       <div class="pms-stat-item">
         <span class="stat-title">Đã đến</span>
-        <span class="stat-value">1 / 14</span>
+        <span class="stat-value">{{ arrivalCount }} / {{ totalRooms }}</span>
       </div>
 
       <div class="pms-stat-item">
         <span class="stat-title">Đã đi</span>
-        <span class="stat-value">1 / 12</span>
+        <span class="stat-value">{{ departureCount }} / {{ totalRooms }}</span>
       </div>
 
       <div class="pms-stat-item">
         <span class="stat-title">Đang ở</span>
-        <span class="stat-value">88 / 90</span>
+        <span class="stat-value">{{ occupiedCount }} / {{ totalRooms }}</span>
       </div>
 
       <div class="pms-stat-item stat-percent">
         <span class="stat-title">Thống kê</span>
-        <span class="stat-value">68.70%</span>
+        <span class="stat-value">{{ occupancyRate }}%</span>
       </div>
 
       <div class="sidebar-action-grid">
@@ -291,8 +344,11 @@ onMounted(() => {
                 <tr>
                   <th>STT</th>
                   <th>Phòng</th>
+                  <th>Dạng phòng</th>
                   <th>Loại</th>
                   <th>SL khách</th>
+                  <th>Giường phụ</th>
+                  <th>Liên phòng</th>
                   <th>Khách</th>
                   <th>Mã ĐK</th>
                   <th>Ngày đến</th>
@@ -300,6 +356,7 @@ onMounted(() => {
                   <th>Công ty</th>
                   <th>Tầng</th>
                   <th>Trạng thái</th>
+                  <th>Ghi chú</th>
                 </tr>
               </thead>
               <tbody>
@@ -310,8 +367,11 @@ onMounted(() => {
                       {{ row.roomName }}
                     </span>
                   </td>
+                  <td>{{ row.roomForm }}</td>
                   <td>{{ row.roomType }}</td>
                   <td>{{ row.clientNumber }}</td>
+                  <td>{{ row.extraBeds }}</td>
+                  <td>{{ row.linkedRoomNumber }}</td>
                   <td>{{ row.guestName }}</td>
                   <td>{{ row.registrationCode }}</td>
                   <td>{{ row.arrivalDate }}</td>
@@ -319,13 +379,9 @@ onMounted(() => {
                   <td>{{ row.company }}</td>
                   <td>{{ row.floor }}</td>
                   <td>
-                    <span class="status-chip">
-                      <span v-if="row.isDeparture">Đã đi</span>
-                      <span v-else-if="row.isArrival">Đã đến</span>
-                      <span v-else-if="row.isOccupied">Đang ở</span>
-                      <span v-else>Trống</span>
-                    </span>
+                    <span class="status-chip">{{ row.statusText }}</span>
                   </td>
+                  <td>{{ row.note }}</td>
                 </tr>
               </tbody>
             </table>
