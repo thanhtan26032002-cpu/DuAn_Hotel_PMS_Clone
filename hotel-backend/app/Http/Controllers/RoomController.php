@@ -11,37 +11,42 @@ class RoomController extends Controller
 {
     public function index()
     {
-       $today = \Carbon\Carbon::today()->toDateString();
+        $today = \Carbon\Carbon::today()->toDateString();
 
         // 1. Lấy danh sách phòng cơ bản (giữ nguyên gốc của bạn)
         $rooms = Room::with(['roomType', 'roomForm'])->get();
 
-        // 2. Dùng DB::table để lấy trực tiếp mã màu từ bảng bookings (Giống cách bạn làm ở hàm stats)
-        $activeBookings = \Illuminate\Support\Facades\DB::table('booking_rooms')
-            ->join('bookings', 'booking_rooms.booking_code', '=', 'bookings.booking_code')
-            ->whereDate('booking_rooms.check_in', '<=', $today)
-            ->whereDate('booking_rooms.check_out', '>', $today)
-            ->select('booking_rooms.room_code', 'bookings.booking_code', 'bookings.booking_color', 'bookings.guest_name')
-            ->get()
-            ->keyBy('room_code'); // Gom nhóm theo mã phòng để dễ tra cứu
+        // Lấy phòng kèm theo thông tin đặt phòng của ngày hôm nay
+        $rooms = Room::with([
+            'roomType',
+            'roomForm',
+            'bookingRooms' => function ($query) use ($today) {
+                $query->whereDate('check_in', '<=', $today)
+                    ->whereDate('check_out', '>', $today)
+                    ->with('booking'); // Gọi tiếp mối quan hệ lấy bảng bookings
+            }
+        ])->get();
 
-        // 3. Gắn màu sắc vào danh sách phòng trả về cho Vue
-        $rooms->map(function ($room) use ($activeBookings) {
-            if ($activeBookings->has($room->room_code)) {
-                $booking = $activeBookings->get($room->room_code);
+        // Map lại cấu trúc dữ liệu gọn gàng để truyền sang Vue
+        $rooms->map(function ($room) {
+            $currentBookingRoom = $room->bookingRooms->first();
+
+            if ($currentBookingRoom && $currentBookingRoom->booking) {
                 $room->current_booking = [
-                    'booking_code'  => $booking->booking_code,
-                    'guest_name'    => $booking->guest_name,
-                    'booking_color' => $booking->booking_color // Lấy mã màu từ DB
+                    'booking_code'  => $currentBookingRoom->booking->booking_code,
+                    'guest_name'    => $currentBookingRoom->booking->guest_name ?? 'Khách',
+                    'booking_color' => $currentBookingRoom->booking->booking_color, // Mã màu từ DB
                 ];
             } else {
                 $room->current_booking = null;
             }
 
+            // Xóa mảng thừa cho nhẹ dữ liệu JSON gửi đi
+            unset($room->bookingRooms);
             return $room;
-    });
+        });
 
-    return response()->json($rooms);
+        return response()->json($rooms);
     }
 
     public function stats()

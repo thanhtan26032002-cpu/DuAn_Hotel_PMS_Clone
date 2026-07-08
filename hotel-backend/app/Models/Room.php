@@ -19,4 +19,11 @@ class Room extends Model
     {
         return $this->belongsTo(RoomForm::class, 'room_form_id', 'id');
     }
+
+    //  Hàm này giúp nối bảng rooms với bảng booking_rooms
+    public function bookingRooms()
+    {
+        // Một phòng có thể nằm trong nhiều booking_rooms (theo lịch sử thời gian)
+        return $this->hasMany(BookingRooms::class, 'room_code', 'room_code');
+    }
 }
