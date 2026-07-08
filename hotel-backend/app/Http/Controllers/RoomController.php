@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Room;
-use Illuminate\Http\Request;
+//use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -11,8 +11,37 @@ class RoomController extends Controller
 {
     public function index()
     {
-       $rooms = Room::with(['roomType', 'roomForm'])->get();
-       return response()->json($rooms);
+       $today = \Carbon\Carbon::today()->toDateString();
+
+        // 1. Lấy danh sách phòng cơ bản (giữ nguyên gốc của bạn)
+        $rooms = Room::with(['roomType', 'roomForm'])->get();
+
+        // 2. Dùng DB::table để lấy trực tiếp mã màu từ bảng bookings (Giống cách bạn làm ở hàm stats)
+        $activeBookings = \Illuminate\Support\Facades\DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_code', '=', 'bookings.booking_code')
+            ->whereDate('booking_rooms.check_in', '<=', $today)
+            ->whereDate('booking_rooms.check_out', '>', $today)
+            ->select('booking_rooms.room_code', 'bookings.booking_code', 'bookings.booking_color', 'bookings.guest_name')
+            ->get()
+            ->keyBy('room_code'); // Gom nhóm theo mã phòng để dễ tra cứu
+
+        // 3. Gắn màu sắc vào danh sách phòng trả về cho Vue
+        $rooms->map(function ($room) use ($activeBookings) {
+            if ($activeBookings->has($room->room_code)) {
+                $booking = $activeBookings->get($room->room_code);
+                $room->current_booking = [
+                    'booking_code'  => $booking->booking_code,
+                    'guest_name'    => $booking->guest_name,
+                    'booking_color' => $booking->booking_color // Lấy mã màu từ DB
+                ];
+            } else {
+                $room->current_booking = null;
+            }
+
+            return $room;
+    });
+
+    return response()->json($rooms);
     }
 
     public function stats()

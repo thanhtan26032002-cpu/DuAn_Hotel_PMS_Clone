@@ -267,6 +267,7 @@ const tableRows = computed(() => {
           : room.is_occupied
             ? 'Đang ở'
             : 'Trống',
+      bookingColor: room.current_booking ? room.current_booking.booking_color : null,
     }))
     .sort((a, b) =>
       String(a.roomName).localeCompare(String(b.roomName), undefined, {
@@ -335,6 +336,7 @@ const roomsDataGrouped = computed(() => {
       isOccupied: room.is_occupied || false,
       dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
       isNameRed: room.is_departure ? true : false,
+      bookingColor: room.current_booking && room.current_booking.booking_color ? room.current_booking.booking_color : null,
     })
   })
 
@@ -752,6 +754,7 @@ onBeforeUnmount(() => {
                 v-for="(room, rIndex) in floor.rooms"
                 :key="rIndex"
                 :class="['pms-room-card', room.isOccupied ? 'state-occupied' : 'state-vacant']"
+                :style="room.bookingColor ? { backgroundColor: room.bookingColor + '40' } : {}"
               >
                 <div v-if="room.dotColor" :class="['card-status-dot', room.dotColor]"></div>
 
@@ -820,7 +823,7 @@ onBeforeUnmount(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, index) in tableRows" :key="index" :class="roomRowClass(row)">
+                <tr v-for="(row, index) in tableRows" :key="index" :class="roomRowClass(row)"  :style="row.bookingColor ? { backgroundColor: row.bookingColor + '40' } : {}">
                   <td>{{ row.order }}</td>
                   <td>
                     <span :class="['room-number-title', { 'color-alert-red': row.isNameRed }]">
