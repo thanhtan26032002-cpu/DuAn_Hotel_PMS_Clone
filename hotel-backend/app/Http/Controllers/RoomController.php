@@ -85,6 +85,66 @@ class RoomController extends Controller
         return response()->json($rooms);
     }
 
+    public function arrivals()
+    {
+        $today = Carbon::today()->toDateString();
+
+        // Lấy tất cả bookings có booking_rooms có check_in hôm nay
+        $bookings = \App\Models\Bookings::with(['bookingRooms' => function ($query) use ($today) {
+                $query->whereDate('check_in', $today);
+            }, 'company', 'status'])
+            ->whereHas('bookingRooms', function ($query) use ($today) {
+                $query->whereDate('check_in', $today);
+            })
+            ->get();
+
+        $notArrived = [];
+        $arrived = [];
+
+        foreach ($bookings as $booking) {
+            $rooms = $booking->bookingRooms;
+            $totalRooms = $rooms->count();
+            // Assuming 'room_status' contains 'checked_in' or something similar when arrived
+            $checkedInCount = $rooms->where('room_status', 'checked_in')->count();
+
+            $statusName = $booking->status ? $booking->status->status_name : 'Unknown';
+
+            $bookingData = [
+                'booking_code'     => $booking->booking_code,
+                'reference_code'   => $booking->reference_code ?? '',
+                'guest_name'       => $booking->guest_name ?? '',
+                'company_name'     => $booking->company ? $booking->company->name : '',
+                'status'           => $statusName,
+                'total_rooms'      => $totalRooms,
+                'checked_in_rooms' => $checkedInCount,
+                'notes'            => $booking->notes ?? '',
+                'booking_color'    => $booking->booking_color ?? '#3b82f6',
+                'rooms'            => $rooms->map(function($r) {
+                    return [
+                        'room_code'   => $r->room_code,
+                        'room_status' => $r->room_status,
+                        'check_in'    => $r->check_in,
+                        'check_out'   => $r->check_out,
+                    ];
+                })->values(),
+            ];
+
+            // Nếu tất cả phòng đã check-in -> đã đến; còn lại -> chưa đến
+            if ($checkedInCount > 0 && $checkedInCount >= $totalRooms) {
+                $arrived[] = $bookingData;
+            } else {
+                $notArrived[] = $bookingData;
+            }
+        }
+
+        return response()->json([
+            'not_arrived'       => $notArrived,
+            'arrived'           => $arrived,
+            'not_arrived_count' => count($notArrived),
+            'arrived_count'     => count($arrived),
+        ]);
+    }
+
     public function stats()
     {
         $today = Carbon::today()->toDateString();
