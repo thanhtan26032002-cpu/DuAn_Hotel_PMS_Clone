@@ -26,6 +26,7 @@ const currentDateTimeLabel = computed(() => {
   return `${padNumber(date.getDate())}/${padNumber(date.getMonth() + 1)}/${date.getFullYear()}`
 })
 
+// eslint-disable-next-line no-unused-vars
 const minFutureDate = computed(() => {
   const date = new Date()
   date.setDate(date.getDate() + 1)
@@ -106,6 +107,7 @@ const openFutureCalendar = async () => {
   updateOverlayPosition()
 }
 
+// eslint-disable-next-line no-unused-vars
 const toggleCalendar = async () => {
   if (!isFutureMode.value) {
     isFutureMode.value = true
