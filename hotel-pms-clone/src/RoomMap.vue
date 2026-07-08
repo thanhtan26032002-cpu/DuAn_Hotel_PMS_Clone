@@ -233,6 +233,7 @@ const occupancyRate = computed(() => {
   return Math.round((occupiedCount.value / totalRooms.value) * 100)
 })
 
+// --- ĐỒNG BỘ TRẠNG THÁI CHO DẠNG BẢNG (TABLE MODE) ---
 const tableRows = computed(() => {
   return rawRoomsData.value
     .map((room) => ({
@@ -314,7 +315,7 @@ const stopClock = () => {
   }
 }
 
-// 3. XỬ LÝ DỮ LIỆU: Gom nhóm theo Tầng và ánh xạ các icon trạng thái theo hình
+// --- ĐỒNG BỘ CHO DẠNG LƯỚI (GRID MODE) ---
 const roomsDataGrouped = computed(() => {
   const floorMap = {}
 
@@ -336,7 +337,10 @@ const roomsDataGrouped = computed(() => {
       isOccupied: room.is_occupied || false,
       dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
       isNameRed: room.is_departure ? true : false,
-      bookingColor: room.current_booking && room.current_booking.booking_color ? room.current_booking.booking_color : null,
+      bookingColor:
+        room.current_booking && room.current_booking.booking_color
+          ? room.current_booking.booking_color
+          : null,
     })
   })
 
@@ -823,27 +827,53 @@ onBeforeUnmount(() => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, index) in tableRows" :key="index" :class="roomRowClass(row)"  :style="row.bookingColor ? { backgroundColor: row.bookingColor + '40' } : {}">
+                <tr
+                  v-for="(row, index) in tableRows"
+                  :key="index"
+                  :class="roomRowClass(row)"
+                  :style="row.bookingColor ? { backgroundColor: row.bookingColor + '26' } : {}"
+                >
                   <td>{{ row.order }}</td>
-                  <td>
-                    <span :class="['room-number-title', { 'color-alert-red': row.isNameRed }]">
-                      {{ row.roomName }}
-                    </span>
-                  </td>
+
+                  <td class="font-bold">{{ row.roomName }}</td>
+
                   <td>{{ row.roomForm }}</td>
                   <td>{{ row.roomType }}</td>
+
                   <td>{{ row.clientNumber }}</td>
                   <td>{{ row.extraBeds }}</td>
                   <td>{{ row.linkedRoomNumber }}</td>
-                  <td>{{ row.guestName }}</td>
+
+                  <td
+                    :style="row.bookingColor ? { color: row.bookingColor, fontWeight: 'bold' } : {}"
+                  >
+                    {{ row.guestName }}
+                  </td>
+
                   <td>{{ row.registrationCode }}</td>
                   <td>{{ row.arrivalDate }}</td>
                   <td>{{ row.departureDate }}</td>
+
                   <td>{{ row.company }}</td>
                   <td>{{ row.floor }}</td>
+
                   <td>
-                    <span class="status-chip">{{ row.statusText }}</span>
+                    <span
+                      :class="[
+                        'status-chip',
+                        {
+                          'bg-blue-100 text-blue-800': row.isOccupied,
+                          'bg-green-100 text-green-800': row.isArrival,
+                          'bg-red-100 text-red-800': row.isDeparture,
+                          'bg-gray-100 text-gray-800':
+                            !row.isOccupied && !row.isArrival && !row.isDeparture,
+                        },
+                      ]"
+                    >
+                      {{ row.statusText }}
+                    </span>
                   </td>
+
                   <td>{{ row.note }}</td>
                 </tr>
               </tbody>

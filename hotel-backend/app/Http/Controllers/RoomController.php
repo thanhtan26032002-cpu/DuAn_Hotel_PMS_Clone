@@ -16,33 +16,66 @@ class RoomController extends Controller
         // 1. Lấy danh sách phòng cơ bản (giữ nguyên gốc của bạn)
         $rooms = Room::with(['roomType', 'roomForm'])->get();
 
-        // Lấy phòng kèm theo thông tin đặt phòng của ngày hôm nay
-        $rooms = Room::with([
-            'roomType',
-            'roomForm',
-            'bookingRooms' => function ($query) use ($today) {
-                $query->whereDate('check_in', '<=', $today)
-                    ->whereDate('check_out', '>', $today)
-                    ->with('booking'); // Gọi tiếp mối quan hệ lấy bảng bookings
+        $today = \Carbon\Carbon::today()->toDateString();
+
+        // Lấy danh sách phòng kèm Loại phòng và Hình thức phòng
+        $rooms = Room::with(['roomType', 'roomForm'])->get();
+
+        // Lấy danh sách thông tin đặt phòng liên quan đến ngày hôm nay
+        $activeBookings = \Illuminate\Support\Facades\DB::table('booking_rooms')
+            ->join('bookings', 'booking_rooms.booking_code', '=', 'bookings.booking_code')
+            ->whereDate('booking_rooms.check_in', '<=', $today)
+            ->whereDate('booking_rooms.check_out', '>=', $today)
+            ->select(
+                'booking_rooms.room_code',
+                'booking_rooms.check_in',
+                'booking_rooms.check_out',
+                'booking_rooms.extra_bed',
+                'bookings.booking_code',
+                'bookings.guest_name',
+                'bookings.booking_color'
+            )
+            ->get()
+            ->groupBy('room_code');
+
+        $rooms->map(function ($room) use ($activeBookings, $today) {
+            $roomBookings = $activeBookings->get($room->room_code);
+
+            // Đặt trạng thái mặc định ban đầu dựa trên DB rooms
+            $room->is_occupied = (bool)$room->is_occupied;
+            $room->is_arrival = false;
+            $room->is_departure = false;
+            $room->current_booking = null;
+
+            if ($roomBookings) {
+                foreach ($roomBookings as $bK) {
+                    // Trạng thái: Khách đến hôm nay
+                    if ($bK->check_in === $today) {
+                        $room->is_arrival = true;
+                    }
+                    // Trạng thái: Khách đi hôm nay
+                    if ($bK->check_out === $today) {
+                        $room->is_departure = true;
+                    }
+                    // Trạng thái: Đang ở thực tế
+                    if ($bK->check_in <= $today && $bK->check_out > $today) {
+                        $room->is_occupied = true;
+                    }
+
+                    // Đồng bộ dữ liệu chi tiết trả về cho Vue
+                    if ($room->is_occupied || $room->is_arrival || $room->is_departure) {
+                        $room->guest_name = $bK->guest_name;
+                        $room->booking_code = $bK->booking_code;
+                        $room->check_in_date = \Carbon\Carbon::parse($bK->check_in)->format('d/m/Y');
+                        $room->check_out_date = \Carbon\Carbon::parse($bK->check_out)->format('d/m/Y');
+                        $room->extra_beds = $bK->extra_bed ? 1 : 0;
+                        $room->current_booking = [
+                            'booking_color' => $bK->booking_color ?? '#3b82f6' // Màu mặc định nếu DB trống
+                        ];
+                    }
+                }
             }
-        ])->get();
 
-        // Map lại cấu trúc dữ liệu gọn gàng để truyền sang Vue
-        $rooms->map(function ($room) {
-            $currentBookingRoom = $room->bookingRooms->first();
-
-            if ($currentBookingRoom && $currentBookingRoom->booking) {
-                $room->current_booking = [
-                    'booking_code'  => $currentBookingRoom->booking->booking_code,
-                    'guest_name'    => $currentBookingRoom->booking->guest_name ?? 'Khách',
-                    'booking_color' => $currentBookingRoom->booking->booking_color, // Mã màu từ DB
-                ];
-            } else {
-                $room->current_booking = null;
-            }
-
-            // Xóa mảng thừa cho nhẹ dữ liệu JSON gửi đi
-            unset($room->bookingRooms);
             return $room;
         });
 
