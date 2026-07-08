@@ -12,7 +12,12 @@ const calendarOpen = ref(false)
 const calendarYear = ref(new Date().getFullYear())
 const calendarMonth = ref(new Date().getMonth())
 const dateTriggerRef = ref(null)
-const overlayStyle = ref({ top: '0px', left: '0px', width: '300px', maxWidth: 'calc(100vw - 24px)' })
+const overlayStyle = ref({
+  top: '0px',
+  left: '0px',
+  width: '300px',
+  maxWidth: 'calc(100vw - 24px)',
+})
 const isStatsModalOpen = ref(false)
 
 const padNumber = (value) => String(value).padStart(2, '0')
@@ -30,7 +35,20 @@ const minFutureDate = computed(() => {
 const weekDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
 const calendarMonthLabel = computed(() => {
-  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
+  const monthNames = [
+    'Tháng 1',
+    'Tháng 2',
+    'Tháng 3',
+    'Tháng 4',
+    'Tháng 5',
+    'Tháng 6',
+    'Tháng 7',
+    'Tháng 8',
+    'Tháng 9',
+    'Tháng 10',
+    'Tháng 11',
+    'Tháng 12',
+  ]
   return `${monthNames[calendarMonth.value]} ${calendarYear.value}`
 })
 
@@ -51,7 +69,13 @@ const calendarDays = computed(() => {
   for (let day = 1; day <= daysInMonth; day += 1) {
     const fullDate = new Date(year, month, day)
     const isoDate = `${year}-${padNumber(month + 1)}-${padNumber(day)}`
-    const disabled = fullDate <= new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), currentDate.value.getDate())
+    const disabled =
+      fullDate <=
+      new Date(
+        currentDate.value.getFullYear(),
+        currentDate.value.getMonth(),
+        currentDate.value.getDate(),
+      )
     days.push({ key: `day-${isoDate}`, date: isoDate, disabled })
   }
 
@@ -212,14 +236,18 @@ const tableRows = computed(() => {
     .map((room) => ({
       roomName: room.room_number,
       roomForm: displayValue(room.room_form?.form_name || room.room_form_name || room.room_form),
-      roomType: displayValue(room.room_type?.type_short_name || room.room_type?.type_name || room.room_type?.name),
+      roomType: displayValue(
+        room.room_type?.type_short_name || room.room_type?.type_name || room.room_type?.name,
+      ),
       clientNumber: displayNumberOrNA(room.max_guests),
       extraBeds: displayNumberOrNA(room.extra_beds),
       linkedRoomNumber: displayValue(room.linked_room_number),
       guestName: displayValue(room.guest_name || room.guest_full_name || room.customer_name),
       registrationCode: displayValue(room.registration_code || room.booking_code || room.code),
       arrivalDate: displayValue(room.arrival_date || room.check_in_date || room.date_arrival),
-      departureDate: displayValue(room.departure_date || room.check_out_date || room.date_departure),
+      departureDate: displayValue(
+        room.departure_date || room.check_out_date || room.date_departure,
+      ),
       company: displayValue(room.company_name || room.company || room.agent),
       floor: displayValue(room.floor),
       note: displayValue(room.note || room.notes),
@@ -233,15 +261,15 @@ const tableRows = computed(() => {
       statusText: room.is_departure
         ? 'Đã đi'
         : room.is_arrival
-        ? 'Đã đến'
-        : room.is_occupied
-        ? 'Đang ở'
-        : 'Trống',
+          ? 'Đã đến'
+          : room.is_occupied
+            ? 'Đang ở'
+            : 'Trống',
     }))
     .sort((a, b) =>
       String(a.roomName).localeCompare(String(b.roomName), undefined, {
         numeric: true,
-      })
+      }),
     )
     .map((row, index) => ({
       ...row,
@@ -379,7 +407,7 @@ onBeforeUnmount(() => {
               type="button"
               :class="[
                 'calendar-day',
-                { disabled: day.disabled, selected: day.date === selectedFutureDate }
+                { disabled: day.disabled, selected: day.date === selectedFutureDate },
               ]"
               :disabled="day.disabled"
               @click="selectFutureDate(day.date)"
@@ -412,7 +440,11 @@ onBeforeUnmount(() => {
         <span class="stat-value">{{ occupiedCount }} / {{ totalRooms }}</span>
       </div>
 
-      <button type="button" class="pms-stat-item stat-percent stat-button" @click.stop="isStatsModalOpen = true">
+      <button
+        type="button"
+        class="pms-stat-item stat-percent stat-button"
+        @click.stop="isStatsModalOpen = true"
+      >
         <span class="stat-title">Thống kê</span>
         <span class="stat-value">{{ occupancyRate }}%</span>
       </button>
@@ -422,7 +454,9 @@ onBeforeUnmount(() => {
           <div class="stats-modal" @click.stop>
             <div class="stats-modal-header">
               <span>Thống kê</span>
-              <button type="button" class="stats-modal-close" @click="isStatsModalOpen = false">×</button>
+              <button type="button" class="stats-modal-close" @click="isStatsModalOpen = false">
+                ×
+              </button>
             </div>
             <div class="stats-modal-body">
               <div class="stats-section">
@@ -436,20 +470,44 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng đến</div>
-                    <div><span class="stats-pill stats-pill-success">{{ statsData.overview.arrivalForecast }}</span></div>
-                    <div><span class="stats-pill">{{ statsData.overview.arrivalActual }}</span></div>
-                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.arrivalForecast + statsData.overview.arrivalActual }}</span></div>
+                    <div>
+                      <span class="stats-pill stats-pill-success">{{
+                        statsData.overview.arrivalForecast
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.overview.arrivalActual }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-pill stats-pill-neutral">{{
+                        statsData.overview.arrivalForecast + statsData.overview.arrivalActual
+                      }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng đi</div>
-                    <div><span class="stats-pill stats-pill-danger">{{ statsData.overview.departureForecast }}</span></div>
-                    <div><span class="stats-pill">{{ statsData.overview.departureActual }}</span></div>
-                    <div><span class="stats-pill stats-pill-neutral">{{ statsData.overview.departureForecast + statsData.overview.departureActual }}</span></div>
+                    <div>
+                      <span class="stats-pill stats-pill-danger">{{
+                        statsData.overview.departureForecast
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.overview.departureActual }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-pill stats-pill-neutral">{{
+                        statsData.overview.departureForecast + statsData.overview.departureActual
+                      }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng ở</div>
-                    <div><span class="stats-pill">{{ statsData.overview.occupiedActual }}</span></div>
-                    <div><span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.overview.occupiedActual }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span>
+                    </div>
                     <div><span class="stats-pill stats-pill-neutral">0</span></div>
                   </div>
                 </div>
@@ -465,43 +523,71 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="stats-table-row">
                     <div>Sẵn sàng</div>
-                    <div><span class="stats-pill stats-pill-success">{{ statsData.status.ready }}</span></div>
+                    <div>
+                      <span class="stats-pill stats-pill-success">{{
+                        statsData.status.ready
+                      }}</span>
+                    </div>
                     <div>Phòng trống</div>
-                    <div><span class="stats-pill">{{ statsData.status.vacant }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.vacant }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Sạch</div>
-                    <div><span class="stats-pill">{{ statsData.status.clean }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.clean }}</span>
+                    </div>
                     <div>Phòng chiếm dụng</div>
-                    <div><span class="stats-pill">{{ statsData.status.occupied }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.occupied }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng bẩn</div>
-                    <div><span class="stats-pill stats-pill-danger">{{ statsData.status.dirty }}</span></div>
+                    <div>
+                      <span class="stats-pill stats-pill-danger">{{ statsData.status.dirty }}</span>
+                    </div>
                     <div>Không L.P</div>
-                    <div><span class="stats-pill">{{ statsData.status.locked }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.locked }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>P. Tham quan</div>
-                    <div><span class="stats-pill">{{ statsData.status.inspection }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.inspection }}</span>
+                    </div>
                     <div>Nhận phòng muộn</div>
-                    <div><span class="stats-pill">{{ statsData.status.lateCheckIn }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.lateCheckIn }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Phòng miễn phí</div>
-                    <div><span class="stats-pill">{{ statsData.status.complimentary }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.complimentary }}</span>
+                    </div>
                     <div>Phòng nội bộ</div>
-                    <div><span class="stats-pill">{{ statsData.status.internal }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.internal }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>OOO</div>
-                    <div><span class="stats-pill">{{ statsData.status.ooo }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.ooo }}</span>
+                    </div>
                     <div>OOS</div>
-                    <div><span class="stats-pill">{{ statsData.status.oos }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.oos }}</span>
+                    </div>
                   </div>
                   <div class="stats-table-row">
                     <div>Thêm giường</div>
-                    <div><span class="stats-pill">{{ statsData.status.extraBeds }}</span></div>
+                    <div>
+                      <span class="stats-pill">{{ statsData.status.extraBeds }}</span>
+                    </div>
                     <div></div>
                     <div></div>
                   </div>
@@ -531,9 +617,15 @@ onBeforeUnmount(() => {
       </teleport>
 
       <div class="sidebar-action-grid">
-
         <button class="action-btn" title="Hóa đơn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M16 2H8a2 2 0 0 0-2 2v16l2-1 2 1 2-1 2 1 2-1 2 1V4a2 2 0 0 0-2-2z"></path>
             <line x1="9" y1="8" x2="15" y2="8"></line>
             <line x1="9" y1="12" x2="15" y2="12"></line>
@@ -541,7 +633,14 @@ onBeforeUnmount(() => {
         </button>
 
         <button class="action-btn" title="Nhóm hóa đơn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M17 2h2a2 2 0 0 1 2 2v11l-2-1-2 1" opacity="0.65"></path>
             <path d="M13 6H5a2 2 0 0 0-2 2v14l2-1 2 1 2-1 2 1 2-1 2 1V8a2 2 0 0 0-2-2z"></path>
             <line x1="6" y1="11" x2="10" y2="11"></line>
@@ -549,9 +648,15 @@ onBeforeUnmount(() => {
           </svg>
         </button>
 
-
         <button class="action-btn" title="Thêm mới">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="16"></line>
             <line x1="8" y1="12" x2="16" y2="12"></line>
@@ -559,29 +664,48 @@ onBeforeUnmount(() => {
         </button>
 
         <button class="action-btn" title="Thông tin">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
         </button>
 
-
         <button class="action-btn-blue" title="Tìm kiếm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
 
         <button class="action-btn-blue" title="Biểu tượng">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <circle cx="12" cy="12" r="10"></circle>
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
-
       </div>
 
       <div class="sidebar-toggle-group bottom-toggle">
@@ -636,9 +760,7 @@ onBeforeUnmount(() => {
                     </span>
                     <span class="room-type-sub">{{ room.roomType }}</span>
                   </div>
-                  <span class="room-capacity-pill">
-                    SL: {{ room.clientNumber }}
-                  </span>
+                  <span class="room-capacity-pill"> SL: {{ room.clientNumber }} </span>
                 </div>
 
                 <div v-if="room.isLocked" class="card-bottom-icon-left">

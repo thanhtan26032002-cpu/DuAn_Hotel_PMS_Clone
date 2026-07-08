@@ -15,8 +15,17 @@ import Report from './Report.vue'
 
 // 1. Gom tất cả component vào một Object để dễ quản lý
 const viewComponents = {
-  RoomMap, RoomAvailability, Booking, Company, GuestSearch,
-  HistoryLog, ManageRoom, RoomLock, RoomSchedule, WorkingList, Report
+  RoomMap,
+  RoomAvailability,
+  Booking,
+  Company,
+  GuestSearch,
+  HistoryLog,
+  ManageRoom,
+  RoomLock,
+  RoomSchedule,
+  WorkingList,
+  Report,
 }
 
 // 2. Khai báo component mặc định
