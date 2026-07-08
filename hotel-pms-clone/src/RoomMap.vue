@@ -242,6 +242,7 @@ const tableRows = computed(() => {
       roomType: displayValue(
         room.room_type?.type_short_name || room.room_type?.type_name || room.room_type?.name,
       ),
+      actualGuests: room.actual_guests || 0,
       clientNumber: displayNumberOrNA(room.max_guests),
       extraBeds: displayNumberOrNA(room.extra_beds),
       linkedRoomNumber: displayValue(room.linked_room_number),
@@ -256,6 +257,7 @@ const tableRows = computed(() => {
       note: displayValue(room.note || room.notes),
       isLocked: room.is_locked || false,
       isDirty: room.clean_status === 'Dirty',
+      isClean: room.clean_status === 'Clean',
       isOccupied: room.is_occupied || false,
       dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
       isNameRed: !!room.is_departure,
@@ -331,9 +333,11 @@ const roomsDataGrouped = computed(() => {
       roomName: room.room_number,
       roomForm: room.room_form?.form_name || room.room_form_name || room.room_form || 'N/A',
       roomType: room.room_type?.type_short_name || room.room_type?.type_name || 'N/A',
+      actualGuests: room.actual_guests || 0,
       clientNumber: room.max_guests || 0,
       isLocked: room.is_locked || false,
       isDirty: room.clean_status === 'Dirty',
+      isClean: room.clean_status === 'Clean',
       isOccupied: room.is_occupied || false,
       dotColor: room.is_departure ? 'red' : room.is_arrival ? 'green' : null,
       isNameRed: room.is_departure ? true : false,
@@ -758,18 +762,97 @@ onBeforeUnmount(() => {
                 v-for="(room, rIndex) in floor.rooms"
                 :key="rIndex"
                 :class="['pms-room-card', room.isOccupied ? 'state-occupied' : 'state-vacant']"
-                :style="room.bookingColor ? { backgroundColor: room.bookingColor + '40' } : {}"
+                :style="room.bookingColor ? { backgroundColor: room.bookingColor + '26' } : {}"
               >
-                <div v-if="room.dotColor" :class="['card-status-dot', room.dotColor]"></div>
-
                 <div class="card-top-row">
-                  <div class="card-info-box">
+                  <div class="card-info-box" style="flex: 1; min-width: 0; padding-right: 4px">
                     <span :class="['room-number-title', { 'color-alert-red': room.isNameRed }]">
                       {{ room.roomName }}
                     </span>
-                    <span class="room-type-sub">{{ room.roomType }}</span>
+                    <span class="room-type-sub" style="font-size: 15px; display: block">
+                      {{ room.roomType }}
+                    </span>
+                    <span
+                      v-if="room.isOccupied || room.isArrival || room.isDeparture"
+                      class="room-type-sub"
+                      style="
+                        display: block;
+                        color: #475569;
+                        font-size: 15px;
+                        margin-top: 2px;
+                        font-weight: 600;
+                      "
+                    >
+                      SL khách: {{ room.actualGuests }}
+                    </span>
                   </div>
-                  <span class="room-capacity-pill"> SL: {{ room.clientNumber }} </span>
+
+                  <div
+                    class="card-top-right"
+                    style="display: flex; gap: 5px; align-items: center; flex-shrink: 0"
+                  >
+                    <!-- Số khách tối đa -->
+                    <span
+                      class="room-capacity-pill"
+                      title="Sức chứa tối đa"
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 2px;
+                        background: transparent;
+                        padding: 0;
+                        font-size: 13px;
+                        color: #0284c7;
+                      "
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        style="width: 16px; height: 16px"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      {{ room.clientNumber }}
+                    </span>
+
+                    <!-- Tích xanh báo có khách đặt (rút gọn không nền) -->
+                    <span
+                      v-if="room.isOccupied || room.isArrival || room.isDeparture"
+                      class="booked-check-icon"
+                      title="Phòng đã được đặt"
+                      style="
+                        color: #16a34a;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        style="width: 16px; height: 16px"
+                      >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+
+                    <!-- Chấm xanh/đỏ -->
+                    <div
+                      v-if="room.dotColor"
+                      :class="['card-status-dot', room.dotColor]"
+                      :title="room.dotColor === 'green' ? 'Phòng đến' : 'Phòng đi'"
+                      style="position: relative; top: auto; right: auto; box-shadow: none"
+                    ></div>
+                  </div>
                 </div>
 
                 <div v-if="room.isLocked" class="card-bottom-icon-left">
@@ -793,6 +876,25 @@ onBeforeUnmount(() => {
                       fill="#cbd5e1"
                     />
                     <path d="M5 19l4-4M3 21l3-3M7 15l4-4" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div v-else-if="room.isClean" class="card-bottom-icon-right">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path
+                      d="M10 2L12 8L18 10L12 12L10 18L8 12L2 10L8 8L10 2Z"
+                      fill="#1f2937"
+                      stroke="none"
+                    />
+                    <path
+                      d="M20 15L21 18L24 19L21 20L20 23L19 20L16 19L19 18L20 15Z"
+                      fill="#1f2937"
+                      stroke="none"
+                    />
+                    <path
+                      d="M6 19L6.5 21L8.5 21.5L6.5 22L6 24L5.5 22L3.5 21.5L5.5 21L6 19Z"
+                      fill="#1f2937"
+                      stroke="none"
+                    />
                   </svg>
                 </div>
               </div>
@@ -1497,7 +1599,7 @@ onBeforeUnmount(() => {
 .pms-rooms-horizontal-list {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(148px, 148px);
+  grid-auto-columns: minmax(185px, 185px);
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 4px;
@@ -1506,8 +1608,8 @@ onBeforeUnmount(() => {
 
 /* CẤU TRÚC CHI TIẾT THẺ PHÒNG (ROOM CARD) */
 .pms-room-card {
-  width: 148px;
-  min-width: 148px;
+  width: 185px;
+  min-width: 185px;
   height: 90px;
   border-radius: 18px;
   padding: 10px;
@@ -1577,12 +1679,13 @@ onBeforeUnmount(() => {
 /* Chấm trạng thái góc trên bên phải */
 .card-status-dot {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 10px;
-  height: 10px;
+  top: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 .card-status-dot.red {
   background-color: #ef4444; /* Phòng đi */
@@ -1781,8 +1884,8 @@ onBeforeUnmount(() => {
   position: absolute;
   bottom: 6px;
   right: 8px;
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   color: #475569;
 }
 .card-bottom-icon-right svg {

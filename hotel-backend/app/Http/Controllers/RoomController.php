@@ -33,7 +33,9 @@ class RoomController extends Controller
                 'booking_rooms.extra_bed',
                 'bookings.booking_code',
                 'bookings.guest_name',
-                'bookings.booking_color'
+                'bookings.booking_color',
+                'booking_rooms.adults',
+                'booking_rooms.children'
             )
             ->get()
             ->groupBy('room_code');
@@ -69,6 +71,7 @@ class RoomController extends Controller
                         $room->check_in_date = \Carbon\Carbon::parse($bK->check_in)->format('d/m/Y');
                         $room->check_out_date = \Carbon\Carbon::parse($bK->check_out)->format('d/m/Y');
                         $room->extra_beds = $bK->extra_bed ? 1 : 0;
+                        $room->actual_guests = ($bK->adults ?? 0) + ($bK->children ?? 0);
                         $room->current_booking = [
                             'booking_color' => $bK->booking_color ?? '#3b82f6' // Màu mặc định nếu DB trống
                         ];
