@@ -11,13 +11,14 @@ class RoomController extends Controller
 {
     public function index()
     {
-        $today = \Carbon\Carbon::today()->toDateString();
+        $now   = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
 
         // Lấy danh sách phòng kèm Loại phòng và Hình thức phòng
         $rooms = Room::with(['roomType', 'roomForm'])->get();
 
         // Lấy danh sách thông tin đặt phòng liên quan đến ngày hôm nay
-        $activeBookings = \Illuminate\Support\Facades\DB::table('booking_rooms')
+        $activeBookings = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_code', '=', 'bookings.booking_code')
             ->whereDate('booking_rooms.check_in', '<=', $today)
             ->whereDate('booking_rooms.check_out', '>=', $today)
@@ -30,45 +31,73 @@ class RoomController extends Controller
                 'booking_rooms.guest_name',
                 'bookings.booking_color',
                 'booking_rooms.adults',
-                'booking_rooms.children'
+                'booking_rooms.children',
+                'booking_rooms.arrival_time',
+                'booking_rooms.departure_time',
+                'booking_rooms.room_status',
             )
             ->get()
             ->groupBy('room_code');
 
-        $rooms->map(function ($room) use ($activeBookings, $today) {
+        $rooms->map(function ($room) use ($activeBookings, $today, $now) {
             $roomBookings = $activeBookings->get($room->room_code);
 
-            // Đặt trạng thái mặc định ban đầu dựa trên DB rooms
-            $room->is_occupied = (bool)$room->is_occupied;
-            $room->is_arrival = false;
+            $room->is_occupied  = false;
+            $room->is_arrival   = false;
             $room->is_departure = false;
             $room->current_booking = null;
 
             if ($roomBookings) {
-                foreach ($roomBookings as $bK) {
-                    // Trạng thái: Khách đến hôm nay
-                    if ($bK->check_in === $today) {
-                        $room->is_arrival = true;
+                foreach ($roomBookings as $bk) {
+                    // Tổng hợp DATETIME check-in / check-out thực tế
+                    $arrivalTime   = $bk->arrival_time   ?? '14:00:00';
+                    $departureTime = $bk->departure_time ?? '12:00:00';
+
+                    $arrivalDt   = Carbon::parse($bk->check_in . ' ' . $arrivalTime, 'Asia/Ho_Chi_Minh');
+                    $departureDt = Carbon::parse($bk->check_out . ' ' . $departureTime, 'Asia/Ho_Chi_Minh');
+
+                    // Chưa đến: check_in hôm nay, chưa đến giờ arrival
+                    $isArrivalPending = ($bk->check_in === $today && $now->lt($arrivalDt));
+
+                    // Đã đến (trong 30 phút đầu): check_in hôm nay, đã qua giờ arrival nhưng chưa đủ 30'
+                    $arrivedAt30      = $arrivalDt->copy()->addMinutes(30);
+                    $isJustArrived    = ($bk->check_in === $today && $now->gte($arrivalDt) && $now->lt($arrivedAt30));
+
+                    // Đang ở thực sự: đã qua 30' kể từ arrival, chưa đến departure
+                    $isFullyOccupied  = $now->gte($arrivedAt30) && $now->lt($departureDt)
+                                        && ($bk->check_out > $today || ($bk->check_out === $today && $now->lt($departureDt)));
+
+                    // Phòng từ hôm qua trở về trước vẫn còn checkout >= hôm nay
+                    $isCarryOver      = ($bk->check_in < $today) && $now->lt($departureDt);
+
+                    // Sắp đi (trong 30' trước departure): chỉ tính hôm nay
+                    $warningDt        = $departureDt->copy()->subMinutes(30);
+                    $isDepartureSoon  = ($bk->check_out === $today && $now->gte($warningDt) && $now->lt($departureDt));
+
+                    // Đã đi
+                    $hasDeparted      = $now->gte($departureDt);
+
+                    // Gắn cờ trạng thái phòng trên thẻ card
+                    if ($isArrivalPending) {
+                        $room->is_arrival = true; // Chưa đến (màu xanh lá)
                     }
-                    // Trạng thái: Khách đi hôm nay
-                    if ($bK->check_out === $today) {
-                        $room->is_departure = true;
-                    }
-                    // Trạng thái: Đang ở thực tế
-                    if ($bK->check_in <= $today && $bK->check_out > $today) {
+                    if ($isJustArrived || $isFullyOccupied || $isCarryOver) {
                         $room->is_occupied = true;
+                    }
+                    if ($isDepartureSoon && !$hasDeparted) {
+                        $room->is_departure = true; // Sắp đi (màu đỏ)
                     }
 
                     // Đồng bộ dữ liệu chi tiết trả về cho Vue
-                    if ($room->is_occupied || $room->is_arrival || $room->is_departure) {
-                        $room->guest_name = $bK->guest_name;
-                        $room->booking_code = $bK->booking_code;
-                        $room->check_in_date = \Carbon\Carbon::parse($bK->check_in)->format('d/m/Y');
-                        $room->check_out_date = \Carbon\Carbon::parse($bK->check_out)->format('d/m/Y');
-                        $room->extra_beds = $bK->extra_bed ? 1 : 0;
-                        $room->actual_guests = ($bK->adults ?? 0) + ($bK->children ?? 0);
+                    if (!$hasDeparted) {
+                        $room->guest_name      = $bk->guest_name;
+                        $room->booking_code    = $bk->booking_code;
+                        $room->check_in_date   = Carbon::parse($bk->check_in)->format('d/m/Y');
+                        $room->check_out_date  = Carbon::parse($bk->check_out)->format('d/m/Y');
+                        $room->extra_beds      = $bk->extra_bed ? 1 : 0;
+                        $room->actual_guests   = ($bk->adults ?? 0) + ($bk->children ?? 0);
                         $room->current_booking = [
-                            'booking_color' => $bK->booking_color ?? '#3b82f6' // Màu mặc định nếu DB trống
+                            'booking_color' => $bk->booking_color ?? '#3b82f6',
                         ];
                     }
                 }
@@ -82,7 +111,8 @@ class RoomController extends Controller
 
     public function arrivals()
     {
-        $today = Carbon::today()->toDateString();
+        $now   = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
 
         // Lấy tất cả bookings có booking_rooms có check_in hôm nay
         $bookings = \App\Models\Bookings::with(['bookingRooms' => function ($query) use ($today) {
@@ -94,13 +124,18 @@ class RoomController extends Controller
             ->get();
 
         $notArrived = [];
-        $arrived = [];
+        $arrived    = [];
 
         foreach ($bookings as $booking) {
-            $rooms = $booking->bookingRooms;
+            $rooms      = $booking->bookingRooms;
             $totalRooms = $rooms->count();
-            // Assuming 'room_status' contains 'checked_in' or something similar when arrived
-            $checkedInCount = $rooms->where('room_status', 'checked_in')->count();
+
+            // Tính số phòng đã đến dựa theo giờ thực tế
+            $arrivedCount = $rooms->filter(function ($r) use ($now) {
+                $arrivalTime = $r->arrival_time ?? '14:00:00';
+                $arrivalDt   = Carbon::parse($r->check_in . ' ' . $arrivalTime, 'Asia/Ho_Chi_Minh');
+                return $now->gte($arrivalDt);
+            })->count();
 
             $statusName = $booking->status ? $booking->status->status_name : 'Unknown';
 
@@ -111,22 +146,25 @@ class RoomController extends Controller
                 'company_name'     => $booking->company ? $booking->company->name : '',
                 'status'           => $statusName,
                 'total_rooms'      => $totalRooms,
-                'checked_in_rooms' => $checkedInCount,
+                'checked_in_rooms' => $arrivedCount,
                 'notes'            => $booking->notes ?? '',
                 'booking_color'    => $booking->booking_color ?? '#3b82f6',
-                'rooms'            => $rooms->map(function($r) {
+                'rooms'            => $rooms->map(function ($r) use ($now) {
+                    $arrivalTime = $r->arrival_time ?? '14:00:00';
+                    $arrivalDt   = Carbon::parse($r->check_in . ' ' . $arrivalTime, 'Asia/Ho_Chi_Minh');
                     return [
                         'room_code'    => $r->room_code,
                         'room_status'  => $r->room_status,
                         'clean_status' => $r->room ? $r->room->clean_status : null,
                         'check_in'     => $r->check_in,
                         'check_out'    => $r->check_out,
+                        'has_arrived'  => $now->gte($arrivalDt),
                     ];
                 })->values(),
             ];
 
-            // Nếu tất cả phòng đã check-in -> đã đến; còn lại -> chưa đến
-            if ($checkedInCount > 0 && $checkedInCount >= $totalRooms) {
+            // Nếu tất cả phòng đã đến (theo giờ thực tế) -> đã đến; còn lại -> chưa đến
+            if ($arrivedCount >= $totalRooms) {
                 $arrived[] = $bookingData;
             } else {
                 $notArrived[] = $bookingData;
@@ -143,24 +181,97 @@ class RoomController extends Controller
 
     public function stats()
     {
-        $today = Carbon::today()->toDateString();
+        $now   = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
+        $nowStr = $now->format('Y-m-d H:i:s');
 
-        $totalRooms = DB::table('rooms')->count();
-        $readyRooms = DB::table('rooms')->where('clean_status', 'Clean')->count();
-        $dirtyRooms = DB::table('rooms')->where('clean_status', 'Dirty')->count();
-        $inspectedRooms = DB::table('rooms')->where('clean_status', 'Inspected')->count();
-        $internalRooms = DB::table('rooms')->where('is_internal', true)->count();
-        $ownerRooms = DB::table('rooms')->where('is_owner_room', true)->count();
-        $dndRooms = DB::table('rooms')->where('is_dnd', true)->count();
-        $makeupRooms = DB::table('rooms')->where('is_makeup_room', true)->count();
+        // ============================================================
+        // PHÒNG ĐẾN (ARRIVALS) - chỉ tính check_in hôm nay
+        // arrival_datetime = TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00'))
+        // ============================================================
 
-        $arrivalsToday = DB::table('booking_rooms')->where('check_in', $today)->count();
-        $departuresToday = DB::table('booking_rooms')->where('check_out', $today)->count();
-        $occupiedRooms = DB::table('booking_rooms')
-            ->where('check_in', '<=', $today)
-            ->where('check_out', '>', $today)
-            ->distinct('room_code')
-            ->count('room_code');
+        // Dự kiến: đã booking hôm nay nhưng giờ arrival chưa tới
+        $arrivalForecast = DB::table('booking_rooms')
+            ->whereDate('check_in', $today)
+            ->whereRaw("TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00')) > ?", [$nowStr])
+            ->count();
+
+        // Thực tế: đã qua giờ arrival (xem là đã đến)
+        $arrivalActual = DB::table('booking_rooms')
+            ->whereDate('check_in', $today)
+            ->whereRaw("TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00')) <= ?", [$nowStr])
+            ->count();
+
+        // ============================================================
+        // PHÒNG Ở (OCCUPIED)
+        // Dự kiến: đã đến nhưng chưa quá 30' (trạng thái "vừa đến")
+        // Thực tế: đã qua 30' sau arrival (đang ở thực sự)
+        //          + phòng từ ngày trước chưa check-out
+        // ============================================================
+
+        // Phòng vừa đến hôm nay (0 - 30' sau arrival_time)
+        $occupiedForecast = DB::table('booking_rooms')
+            ->whereDate('check_in', $today)
+            ->whereDate('check_out', '>', $today)
+            ->whereRaw("TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00')) <= ?", [$nowStr])
+            ->whereRaw("TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00')) + INTERVAL 30 MINUTE > ?", [$nowStr])
+            ->count();
+
+        // Phòng đang ở thực sự hôm nay (>30' sau arrival)
+        $occupiedActualToday = DB::table('booking_rooms')
+            ->whereDate('check_in', $today)
+            ->whereDate('check_out', '>', $today)
+            ->whereRaw("TIMESTAMP(check_in, COALESCE(arrival_time, '14:00:00')) + INTERVAL 30 MINUTE <= ?", [$nowStr])
+            ->count();
+
+        // Phòng từ hôm qua trở về (carry-over), chưa đến giờ checkout
+        $occupiedCarryOver = DB::table('booking_rooms')
+            ->whereDate('check_in', '<', $today)
+            ->whereDate('check_out', '>', $today)
+            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) > ?", [$nowStr])
+            ->count();
+
+        // Carry-over checkout hôm nay nhưng chưa đến giờ checkout
+        $occupiedCarryToday = DB::table('booking_rooms')
+            ->whereDate('check_in', '<', $today)
+            ->whereDate('check_out', $today)
+            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) > ?", [$nowStr])
+            ->count();
+
+        $occupiedActual = $occupiedActualToday + $occupiedCarryOver + $occupiedCarryToday;
+        $occupiedTotal  = $occupiedForecast + $occupiedActual;
+
+        // ============================================================
+        // PHÒNG ĐI (DEPARTURES) - chỉ tính check_out hôm nay
+        // departure_datetime = TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00'))
+        // Dự kiến: trong 30' trước departure_time (đang sắp đi)
+        // Thực tế: đã qua departure_time (đã đi)
+        // ============================================================
+
+        // Dự kiến: 30 phút trước departure_time (cảnh báo sắp đi)
+        $departureForecast = DB::table('booking_rooms')
+            ->whereDate('check_out', $today)
+            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) - INTERVAL 30 MINUTE <= ?", [$nowStr])
+            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) > ?", [$nowStr])
+            ->count();
+
+        // Thực tế: đã qua departure_time
+        $departureActual = DB::table('booking_rooms')
+            ->whereDate('check_out', $today)
+            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) <= ?", [$nowStr])
+            ->count();
+
+        // ============================================================
+        // THỐNG KÊ TRẠNG THÁI PHÒNG (status section)
+        // ============================================================
+        $totalRooms      = DB::table('rooms')->count();
+        $readyRooms      = DB::table('rooms')->where('clean_status', 'Clean')->count();
+        $dirtyRooms      = DB::table('rooms')->where('clean_status', 'Dirty')->count();
+        $inspectedRooms  = DB::table('rooms')->where('clean_status', 'Inspected')->count();
+        $internalRooms   = DB::table('rooms')->where('is_internal', true)->count();
+        $ownerRooms      = DB::table('rooms')->where('is_owner_room', true)->count();
+        $dndRooms        = DB::table('rooms')->where('is_dnd', true)->count();
+        $makeupRooms     = DB::table('rooms')->where('is_makeup_room', true)->count();
 
         $complimentaryRooms = DB::table('booking_rooms')
             ->join('bookings', 'booking_rooms.booking_code', '=', 'bookings.booking_code')
@@ -168,15 +279,19 @@ class RoomController extends Controller
             ->count();
 
         $lateCheckIns = DB::table('booking_rooms')
-            ->where('check_in', $today)
+            ->whereDate('check_in', $today)
             ->whereNotNull('arrival_time')
             ->where('arrival_time', '>', '14:00:00')
             ->count();
 
-        $extraBeds = DB::table('booking_rooms')->where('extra_bed', true)->count();
+        $extraBeds = DB::table('booking_rooms')
+            ->where('extra_bed', true)
+            ->whereDate('check_in', '<=', $today)
+            ->whereDate('check_out', '>=', $today)
+            ->count();
 
-        $oosCount = 0;
-        $oooCount = 0;
+        $oosCount    = 0;
+        $oooCount    = 0;
         $lockedRooms = 0;
         if (DB::getSchemaBuilder()->hasTable('room_locks')) {
             $oosCount = DB::table('room_locks')
@@ -196,36 +311,39 @@ class RoomController extends Controller
                 ->count();
         }
 
-        $occupiedPercent = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 0) : 0;
+        // Số phòng đang bị chiếm dụng = tổng phòng đang ở thực sự
+        $occupiedRoomsTotal = $occupiedActual;
+        $vacantRooms        = max(0, $totalRooms - $occupiedRoomsTotal);
+        $occupiedPercent    = $totalRooms > 0 ? round(($occupiedRoomsTotal / $totalRooms) * 100, 0) : 0;
 
         return response()->json([
             'overview' => [
-                'arrivalForecast' => $arrivalsToday,
-                'arrivalActual' => $arrivalsToday,
-                'departureForecast' => $departuresToday,
-                'departureActual' => $departuresToday,
-                'occupiedActual' => $occupiedRooms,
-                'occupiedEndOfDay' => $occupiedRooms,
-                'occupiedTotal' => 0,
-                'total' => $totalRooms,
+                'arrivalForecast'   => $arrivalForecast,
+                'arrivalActual'     => $arrivalActual,
+                'departureForecast' => $departureForecast,
+                'departureActual'   => $departureActual,
+                'occupiedActual'    => $occupiedForecast,   // Dự kiến phòng ở = phòng vừa đến (0-30')
+                'occupiedEndOfDay'  => $occupiedActual,     // Thực tế phòng ở = đang ở (>30' hoặc carry-over)
+                'occupiedTotal'     => $occupiedTotal,
+                'total'             => $totalRooms,
             ],
             'status' => [
-                'ready' => $readyRooms,
-                'clean' => $readyRooms,
-                'dirty' => $dirtyRooms,
-                'occupied' => $occupiedRooms,
-                'vacant' => max(0, $totalRooms - $occupiedRooms),
-                'locked' => $lockedRooms,
-                'inspection' => $makeupRooms,
-                'lateCheckIn' => $lateCheckIns,
-                'complimentary' => $complimentaryRooms,
-                'extraBeds' => $extraBeds,
-                'internal' => $internalRooms,
-                'owner' => $ownerRooms,
-                'dnd' => $dndRooms,
-                'oos' => $oosCount,
-                'ooo' => $oooCount,
-                'occupiedPercent' => $occupiedPercent,
+                'ready'          => $readyRooms,
+                'clean'          => $readyRooms,
+                'dirty'          => $dirtyRooms,
+                'occupied'       => $occupiedRoomsTotal,
+                'vacant'         => $vacantRooms,
+                'locked'         => $lockedRooms,
+                'inspection'     => $inspectedRooms,
+                'lateCheckIn'    => $lateCheckIns,
+                'complimentary'  => $complimentaryRooms,
+                'extraBeds'      => $extraBeds,
+                'internal'       => $internalRooms,
+                'owner'          => $ownerRooms,
+                'dnd'            => $dndRooms,
+                'oos'            => $oosCount,
+                'ooo'            => $oooCount,
+                'occupiedPercent'=> $occupiedPercent,
             ],
         ]);
     }

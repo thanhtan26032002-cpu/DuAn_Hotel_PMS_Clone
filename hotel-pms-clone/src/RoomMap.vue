@@ -341,7 +341,9 @@ const openArrivalsModal = () => {
   fetchArrivals()
 }
 
-let dateTimer = null
+let dateTimer  = null
+let statsTimer = null
+
 const startClock = () => {
   currentDateTime.value = new Date()
   dateTimer = setInterval(() => {
@@ -353,6 +355,21 @@ const stopClock = () => {
   if (dateTimer) {
     clearInterval(dateTimer)
     dateTimer = null
+  }
+}
+
+// Auto-refresh dữ liệu mỗi 60 giây để đồng bộ trạng thái theo thời gian thực
+const startStatsTimer = () => {
+  statsTimer = setInterval(async () => {
+    await fetchRooms()
+    await fetchRoomStats()
+  }, 60_000)
+}
+
+const stopStatsTimer = () => {
+  if (statsTimer) {
+    clearInterval(statsTimer)
+    statsTimer = null
   }
 }
 
@@ -415,11 +432,13 @@ onMounted(() => {
   fetchRooms()
   fetchRoomStats()
   startClock()
+  startStatsTimer()
   document.addEventListener('click', handleDocumentClick)
 })
 
 onBeforeUnmount(() => {
   stopClock()
+  stopStatsTimer()
   document.removeEventListener('click', handleDocumentClick)
 })
 </script>
@@ -515,19 +534,21 @@ onBeforeUnmount(() => {
                 <div class="stats-table">
                   <div class="stats-table-row stats-table-header">
                     <div></div>
-                    <div>Dự kiến</div>
-                    <div>Thực tế</div>
-                    <div>Tổng cộng</div>
+                    <div title="Chưa đến / Sắp đến / Sắp đi">Dự kiến</div>
+                    <div title="Đã đến / Đang ở / Đã đi">Thực tế</div>
+                    <div>Tổng</div>
                   </div>
                   <div class="stats-table-row">
-                    <div>Phòng đến</div>
+                    <div title="Dự kiến = chưa đến | Thực tế = đã đến">
+                      Phòng đến
+                    </div>
                     <div>
                       <span class="stats-pill stats-pill-success">{{
                         statsData.overview.arrivalForecast
                       }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill">{{ statsData.overview.arrivalActual }}</span>
+                      <span class="stats-pill stats-pill-info">{{ statsData.overview.arrivalActual }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
@@ -536,14 +557,16 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div class="stats-table-row">
-                    <div>Phòng đi</div>
+                    <div title="Dự kiến = sắp đi (trong 30') | Thực tế = đã đi">
+                      Phòng đi
+                    </div>
                     <div>
                       <span class="stats-pill stats-pill-danger">{{
                         statsData.overview.departureForecast
                       }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill">{{ statsData.overview.departureActual }}</span>
+                      <span class="stats-pill stats-pill-info">{{ statsData.overview.departureActual }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
@@ -552,16 +575,18 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div class="stats-table-row">
-                    <div>Phòng ở</div>
+                    <div title="Dự kiến = vừa đến (0–30') | Thực tế = đang ở (>30' hoặc carry-over)">
+                      Phòng ở
+                    </div>
                     <div>
                       <span class="stats-pill">{{ statsData.overview.occupiedActual }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span>
+                      <span class="stats-pill stats-pill-info">{{ statsData.overview.occupiedEndOfDay }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
-                        statsData.overview.occupiedEndOfDay
+                        statsData.overview.occupiedActual + statsData.overview.occupiedEndOfDay
                       }}</span>
                     </div>
                   </div>
@@ -1829,6 +1854,11 @@ onBeforeUnmount(() => {
 
 .stats-pill-neutral {
   background: #e2e8f0;
+}
+
+.stats-pill-info {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .stats-summary-row {
