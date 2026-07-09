@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bookings;
-use Illuminate\Http\Request;
+//use Illuminate\Http\Request;
 
 class BookingController extends Controller
 {
