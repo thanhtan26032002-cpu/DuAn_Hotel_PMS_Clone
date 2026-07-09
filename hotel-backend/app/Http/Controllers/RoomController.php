@@ -86,7 +86,7 @@ class RoomController extends Controller
 
         // Lấy tất cả bookings có booking_rooms có check_in hôm nay
         $bookings = \App\Models\Bookings::with(['bookingRooms' => function ($query) use ($today) {
-                $query->whereDate('check_in', $today);
+                $query->with('room')->whereDate('check_in', $today);
             }, 'company', 'status'])
             ->whereHas('bookingRooms', function ($query) use ($today) {
                 $query->whereDate('check_in', $today);
@@ -116,10 +116,11 @@ class RoomController extends Controller
                 'booking_color'    => $booking->booking_color ?? '#3b82f6',
                 'rooms'            => $rooms->map(function($r) {
                     return [
-                        'room_code'   => $r->room_code,
-                        'room_status' => $r->room_status,
-                        'check_in'    => $r->check_in,
-                        'check_out'   => $r->check_out,
+                        'room_code'    => $r->room_code,
+                        'room_status'  => $r->room_status,
+                        'clean_status' => $r->room ? $r->room->clean_status : null,
+                        'check_in'     => $r->check_in,
+                        'check_out'    => $r->check_out,
                     ];
                 })->values(),
             ];

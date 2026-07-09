@@ -559,7 +559,11 @@ onBeforeUnmount(() => {
                     <div>
                       <span class="stats-pill">{{ statsData.overview.occupiedEndOfDay }}</span>
                     </div>
-                    <div><span class="stats-pill stats-pill-neutral">0</span></div>
+                    <div>
+                      <span class="stats-pill stats-pill-neutral">{{
+                        statsData.overview.occupiedEndOfDay
+                      }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -695,98 +699,135 @@ onBeforeUnmount(() => {
                   <table class="arrivals-table">
                     <thead>
                       <tr class="arrivals-table-head-green">
-                        <th><input type="checkbox" /></th>
+                        <th>
+                          <div style="display: flex; align-items: center; gap: 10px">
+                            <div style="width: 16px; margin-right: 8px"></div>
+                            <input type="checkbox" />
+                          </div>
+                        </th>
                         <th>Mã BK</th>
                         <th>Mã tham chiếu</th>
                         <th>Tên BK</th>
                         <th>Công ty</th>
                         <th>Tình trạng ĐK</th>
-                        <th>Tổng số phòng</th>
-                        <th>Ghi chú</th>
+                        <th style="text-align: center">Tổng số phòng</th>
+                        <th style="text-align: center">Ghi chú</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <template v-if="arrivalsData.not_arrived.length > 0">
-                        <tbody v-for="(bk, bkIdx) in arrivalsData.not_arrived" :key="bkIdx">
-                          <tr class="arrivals-row-main">
+                    <template v-if="arrivalsData.not_arrived.length > 0">
+                      <tbody v-for="(bk, bkIdx) in arrivalsData.not_arrived" :key="bkIdx">
+                        <tr class="arrivals-row-main">
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 10px">
+                              <button
+                                type="button"
+                                class="arrivals-expand-btn"
+                                @click="toggleExpand('not_arrived', bkIdx)"
+                              >
+                                {{ expandedRows.not_arrived[bkIdx] ? '-' : '+' }}
+                              </button>
+                              <input type="checkbox" />
+                            </div>
+                          </td>
+                          <td
+                            class="arrivals-code"
+                            :style="bk.booking_color ? { color: bk.booking_color } : {}"
+                          >
+                            {{ bk.booking_code }}
+                          </td>
+                          <td>{{ bk.reference_code }}</td>
+                          <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                          <td>{{ bk.company_name }}</td>
+                          <td>
+                            <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
+                              bk.status
+                            }}</span>
+                          </td>
+                          <td class="arrivals-center">
+                            <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
+                          </td>
+                          <td class="arrivals-center">
+                            <button type="button" class="arrivals-note-btn" :title="bk.notes">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#60a5fa"
+                                stroke-width="2"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                ></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                        <!-- Sub-rows -->
+                        <template v-if="expandedRows.not_arrived[bkIdx]">
+                          <tr
+                            v-for="(rm, rmIdx) in bk.rooms"
+                            :key="'rm-' + rmIdx"
+                            class="arrivals-sub-row"
+                          >
                             <td>
                               <div style="display: flex; align-items: center; gap: 10px">
-                                <button
-                                  type="button"
-                                  class="arrivals-expand-btn"
-                                  @click="toggleExpand('not_arrived', bkIdx)"
-                                >
-                                  {{ expandedRows.not_arrived[bkIdx] ? '-' : '+' }}
-                                </button>
+                                <div style="width: 16px; margin-right: 8px"></div>
                                 <input type="checkbox" />
                               </div>
                             </td>
-                            <td
-                              class="arrivals-code"
-                              :style="bk.booking_color ? { color: bk.booking_color } : {}"
-                            >
-                              {{ bk.booking_code }}
-                            </td>
-                            <td>{{ bk.reference_code }}</td>
+                            <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
+                            <td></td>
                             <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
-                            <td>{{ bk.company_name }}</td>
-                            <td>
-                              <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
-                                bk.status
-                              }}</span>
-                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td class="arrivals-center">
-                              <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
-                            </td>
-                            <td class="arrivals-center">
-                              <button type="button" class="arrivals-note-btn" :title="bk.notes">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="#60a5fa"
-                                  stroke-width="2"
-                                  style="width: 16px; height: 16px"
-                                >
-                                  <path
-                                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                  ></path>
-                                  <polyline points="14 2 14 8 20 8"></polyline>
-                                </svg>
-                              </button>
+                              <svg
+                                v-if="rm.clean_status === 'Clean'"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M10 2L12 8L18 10L12 12L10 18L8 12L2 10L8 8L10 2Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                                <path
+                                  d="M20 15L21 18L24 19L21 20L20 23L19 20L16 19L19 18L20 15Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                                <path
+                                  d="M6 19L6.5 21L8.5 21.5L6.5 22L6 24L5.5 22L3.5 21.5L5.5 21L6 19Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                              </svg>
+                              <svg
+                                v-else
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M12.5 18.5L20 11c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0l-7.5 7.5c-.8.8-1 2.2-.5 3.2l2.5 2.5c1 .5 2.4.3 3.5-.7z"
+                                  fill="#cbd5e1"
+                                />
+                                <path d="M5 19l4-4M3 21l3-3M7 15l4-4" stroke-linecap="round" />
+                              </svg>
                             </td>
                           </tr>
-                          <!-- Sub-rows -->
-                          <template v-if="expandedRows.not_arrived[bkIdx]">
-                            <tr
-                              v-for="(rm, rmIdx) in bk.rooms"
-                              :key="'rm-' + rmIdx"
-                              class="arrivals-sub-row"
-                            >
-                              <td><input type="checkbox" /></td>
-                              <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
-                              <td></td>
-                              <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
-                              <td></td>
-                              <td></td>
-                              <td></td>
-                              <td class="arrivals-center">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="#64748b"
-                                  stroke-width="2"
-                                  style="width: 16px; height: 16px"
-                                >
-                                  <path
-                                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-                                  />
-                                </svg>
-                              </td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </template>
-                      <tr v-else>
+                        </template>
+                      </tbody>
+                    </template>
+                    <tbody v-else>
+                      <tr>
                         <td colspan="8" class="arrivals-nodata">
                           <div class="arrivals-nodata-inner">
                             <svg
@@ -826,25 +867,26 @@ onBeforeUnmount(() => {
                   <table class="arrivals-table">
                     <thead>
                       <tr class="arrivals-table-head-cyan">
-                        <th><input type="checkbox" /></th>
+                        <th>
+                          <div style="display: flex; align-items: center; gap: 10px">
+                            <div style="width: 16px; margin-right: 8px"></div>
+                            <input type="checkbox" />
+                          </div>
+                        </th>
                         <th>Mã BK</th>
                         <th>Mã tham chiếu</th>
                         <th>Tên BK</th>
                         <th>Công ty</th>
                         <th>Tình trạng ĐK</th>
-                        <th>Tổng số phòng</th>
-                        <th>Ghi chú</th>
+                        <th style="text-align: center">Tổng số phòng</th>
+                        <th style="text-align: center">Ghi chú</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <template v-if="arrivalsData.arrived.length > 0">
-                        <tbody v-for="(bk, bkIdx) in arrivalsData.arrived" :key="bkIdx">
-                          <tr class="arrivals-row-main arrivals-row-checked">
-                            <td><input type="checkbox" /></td>
-                            <td
-                              class="arrivals-code"
-                              :style="bk.booking_color ? { color: bk.booking_color } : {}"
-                            >
+                    <template v-if="arrivalsData.arrived.length > 0">
+                      <tbody v-for="(bk, bkIdx) in arrivalsData.arrived" :key="bkIdx">
+                        <tr class="arrivals-row-main arrivals-row-checked">
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 10px">
                               <button
                                 type="button"
                                 class="arrivals-expand-btn"
@@ -852,68 +894,108 @@ onBeforeUnmount(() => {
                               >
                                 {{ expandedRows.arrived[bkIdx] ? '-' : '+' }}
                               </button>
-                              {{ bk.booking_code }}
-                            </td>
-                            <td>{{ bk.reference_code }}</td>
-                            <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
-                            <td>{{ bk.company_name }}</td>
+                              <input type="checkbox" />
+                            </div>
+                          </td>
+                          <td
+                            class="arrivals-code"
+                            :style="bk.booking_color ? { color: bk.booking_color } : {}"
+                          >
+                            {{ bk.booking_code }}
+                          </td>
+                          <td>{{ bk.reference_code }}</td>
+                          <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                          <td>{{ bk.company_name }}</td>
+                          <td>
+                            <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
+                              bk.status
+                            }}</span>
+                          </td>
+                          <td class="arrivals-center">
+                            <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
+                          </td>
+                          <td class="arrivals-center">
+                            <button type="button" class="arrivals-note-btn" :title="bk.notes">
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#60a5fa"
+                                stroke-width="2"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                ></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                        <!-- Sub-rows -->
+                        <template v-if="expandedRows.arrived[bkIdx]">
+                          <tr
+                            v-for="(rm, rmIdx) in bk.rooms"
+                            :key="'rm-' + rmIdx"
+                            class="arrivals-sub-row"
+                          >
                             <td>
-                              <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
-                                bk.status
-                              }}</span>
+                              <div style="display: flex; align-items: center; gap: 10px">
+                                <div style="width: 16px; margin-right: 8px"></div>
+                                <input type="checkbox" />
+                              </div>
                             </td>
+                            <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
+                            <td></td>
+                            <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                             <td class="arrivals-center">
-                              <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
-                            </td>
-                            <td class="arrivals-center">
-                              <button type="button" class="arrivals-note-btn" :title="bk.notes">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="#60a5fa"
-                                  stroke-width="2"
-                                  style="width: 16px; height: 16px"
-                                >
-                                  <path
-                                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                                  ></path>
-                                  <polyline points="14 2 14 8 20 8"></polyline>
-                                </svg>
-                              </button>
+                              <svg
+                                v-if="rm.clean_status === 'Clean'"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M10 2L12 8L18 10L12 12L10 18L8 12L2 10L8 8L10 2Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                                <path
+                                  d="M20 15L21 18L24 19L21 20L20 23L19 20L16 19L19 18L20 15Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                                <path
+                                  d="M6 19L6.5 21L8.5 21.5L6.5 22L6 24L5.5 22L3.5 21.5L5.5 21L6 19Z"
+                                  fill="#1f2937"
+                                  stroke="none"
+                                />
+                              </svg>
+                              <svg
+                                v-else
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                style="width: 16px; height: 16px"
+                              >
+                                <path
+                                  d="M12.5 18.5L20 11c1.5-1.5 1.5-4 0-5.5s-4-1.5-5.5 0l-7.5 7.5c-.8.8-1 2.2-.5 3.2l2.5 2.5c1 .5 2.4.3 3.5-.7z"
+                                  fill="#cbd5e1"
+                                />
+                                <path d="M5 19l4-4M3 21l3-3M7 15l4-4" stroke-linecap="round" />
+                              </svg>
                             </td>
                           </tr>
-                          <!-- Sub-rows -->
-                          <template v-if="expandedRows.arrived[bkIdx]">
-                            <tr
-                              v-for="(rm, rmIdx) in bk.rooms"
-                              :key="'rm-' + rmIdx"
-                              class="arrivals-sub-row"
-                            >
-                              <td><input type="checkbox" /></td>
-                              <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
-                              <td></td>
-                              <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
-                              <td></td>
-                              <td></td>
-                              <td></td>
-                              <td class="arrivals-center">
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="#64748b"
-                                  stroke-width="2"
-                                  style="width: 16px; height: 16px"
-                                >
-                                  <path
-                                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-                                  />
-                                </svg>
-                              </td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </template>
-                      <tr v-else>
+                        </template>
+                      </tbody>
+                    </template>
+                    <tbody v-else>
+                      <tr>
                         <td colspan="8" class="arrivals-nodata">
                           <div class="arrivals-nodata-inner">
                             <svg
