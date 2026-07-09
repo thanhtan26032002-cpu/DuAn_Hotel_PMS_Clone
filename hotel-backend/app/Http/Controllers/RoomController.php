@@ -13,11 +13,6 @@ class RoomController extends Controller
     {
         $today = \Carbon\Carbon::today()->toDateString();
 
-        // 1. Lấy danh sách phòng cơ bản (giữ nguyên gốc của bạn)
-        $rooms = Room::with(['roomType', 'roomForm'])->get();
-
-        $today = \Carbon\Carbon::today()->toDateString();
-
         // Lấy danh sách phòng kèm Loại phòng và Hình thức phòng
         $rooms = Room::with(['roomType', 'roomForm'])->get();
 
@@ -32,7 +27,7 @@ class RoomController extends Controller
                 'booking_rooms.check_out',
                 'booking_rooms.extra_bed',
                 'bookings.booking_code',
-                'bookings.guest_name',
+                'booking_rooms.guest_name',
                 'bookings.booking_color',
                 'booking_rooms.adults',
                 'booking_rooms.children'

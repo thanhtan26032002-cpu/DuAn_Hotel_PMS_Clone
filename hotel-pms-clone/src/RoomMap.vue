@@ -1259,7 +1259,7 @@ onBeforeUnmount(() => {
                   <td>{{ row.roomForm }}</td>
                   <td>{{ row.roomType }}</td>
 
-                  <td>{{ row.clientNumber }}</td>
+                  <td>{{ row.actualGuests }}</td>
                   <td>{{ row.extraBeds }}</td>
                   <td>{{ row.linkedRoomNumber }}</td>
 
