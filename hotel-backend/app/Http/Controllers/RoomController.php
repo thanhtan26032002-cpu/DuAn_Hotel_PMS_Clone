@@ -179,6 +179,149 @@ class RoomController extends Controller
         ]);
     }
 
+    public function departures()
+    {
+        $now   = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
+
+        // Lấy tất cả bookings có booking_rooms có check_out hôm nay
+        $bookings = \App\Models\Bookings::with(['bookingRooms' => function ($query) use ($today) {
+                $query->with('room')->whereDate('check_out', $today);
+            }, 'company', 'status'])
+            ->whereHas('bookingRooms', function ($query) use ($today) {
+                $query->whereDate('check_out', $today);
+            })
+            ->get();
+
+        $notDeparted = [];
+        $departed    = [];
+
+        foreach ($bookings as $booking) {
+            $rooms      = $booking->bookingRooms;
+            $totalRooms = $rooms->count();
+
+            // Đếm số phòng đã thực sự đi (đã qua departure_time)
+            $departedCount = $rooms->filter(function ($r) use ($now) {
+                $departureTime = $r->departure_time ?? '12:00:00';
+                $departureDt   = Carbon::parse($r->check_out . ' ' . $departureTime, 'Asia/Ho_Chi_Minh');
+                return $now->gte($departureDt);
+            })->count();
+
+            $statusName = $booking->status ? $booking->status->status_name : 'Unknown';
+
+            $bookingData = [
+                'booking_code'      => $booking->booking_code,
+                'reference_code'    => $booking->reference_code ?? '',
+                'guest_name'        => $booking->guest_name ?? '',
+                'company_name'      => $booking->company ? $booking->company->name : '',
+                'status'            => $statusName,
+                'total_rooms'       => $totalRooms,
+                'departed_rooms'    => $departedCount,
+                'notes'             => $booking->notes ?? '',
+                'booking_color'     => $booking->booking_color ?? '#3b82f6',
+                'rooms'             => $rooms->map(function ($r) use ($now) {
+                    $departureTime = $r->departure_time ?? '12:00:00';
+                    $departureDt   = Carbon::parse($r->check_out . ' ' . $departureTime, 'Asia/Ho_Chi_Minh');
+                    return [
+                        'room_code'      => $r->room_code,
+                        'room_status'    => $r->room_status,
+                        'clean_status'   => $r->room ? $r->room->clean_status : null,
+                        'check_in'       => $r->check_in,
+                        'check_out'      => $r->check_out,
+                        'departure_time' => $r->departure_time,
+                        'has_departed'   => $now->gte($departureDt),
+                    ];
+                })->values(),
+            ];
+
+            // Nếu tất cả phòng đã đi -> departed; còn lại -> chưa đi hết (sắp đi)
+            if ($departedCount >= $totalRooms) {
+                $departed[] = $bookingData;
+            } else {
+                $notDeparted[] = $bookingData;
+            }
+        }
+
+        return response()->json([
+            'not_departed'       => $notDeparted,
+            'departed'           => $departed,
+            'not_departed_count' => count($notDeparted),
+            'departed_count'     => count($departed),
+        ]);
+    }
+
+    public function occupied()
+    {
+        $now   = Carbon::now('Asia/Ho_Chi_Minh');
+        $today = $now->toDateString();
+
+        // Lấy bookings đang ở: check_in <= hôm nay và check_out > hôm nay
+        // (bao gồm carry-over và đã vào ở hôm nay >30' sau arrival)
+        $bookings = \App\Models\Bookings::with(['bookingRooms' => function ($query) use ($today) {
+                $query->with('room')
+                      ->whereDate('check_in', '<=', $today)
+                      ->whereDate('check_out', '>=', $today);
+            }, 'company', 'status'])
+            ->whereHas('bookingRooms', function ($query) use ($today) {
+                $query->whereDate('check_in', '<=', $today)
+                      ->whereDate('check_out', '>=', $today);
+            })
+            ->get();
+
+        $occupiedList = [];
+
+        foreach ($bookings as $booking) {
+            $rooms = $booking->bookingRooms;
+
+            // Lọc các phòng đang thực sự ở (đã qua 30' sau arrival, chưa đến departure)
+            $occupiedRooms = $rooms->filter(function ($r) use ($now, $today) {
+                $arrivalTime   = $r->arrival_time   ?? '14:00:00';
+                $departureTime = $r->departure_time ?? '12:00:00';
+                $arrivalDt     = Carbon::parse($r->check_in  . ' ' . $arrivalTime,   'Asia/Ho_Chi_Minh');
+                $departureDt   = Carbon::parse($r->check_out . ' ' . $departureTime, 'Asia/Ho_Chi_Minh');
+                $arrivedAt30   = $arrivalDt->copy()->addMinutes(30);
+
+                // Carry-over: check_in trước hôm nay, chưa đến departure
+                $isCarryOver   = ($r->check_in < $today) && $now->lt($departureDt);
+                // Đang ở hôm nay: đã qua 30' kể từ arrival
+                $isOccupied    = $now->gte($arrivedAt30) && $now->lt($departureDt);
+
+                return $isCarryOver || $isOccupied;
+            });
+
+            if ($occupiedRooms->isEmpty()) {
+                continue;
+            }
+
+            $statusName = $booking->status ? $booking->status->status_name : 'Unknown';
+
+            $occupiedList[] = [
+                'booking_code'   => $booking->booking_code,
+                'reference_code' => $booking->reference_code ?? '',
+                'guest_name'     => $booking->guest_name ?? '',
+                'company_name'   => $booking->company ? $booking->company->name : '',
+                'status'         => $statusName,
+                'total_rooms'    => $occupiedRooms->count(),
+                'notes'          => $booking->notes ?? '',
+                'booking_color'  => $booking->booking_color ?? '#3b82f6',
+                'rooms'          => $occupiedRooms->map(function ($r) {
+                    return [
+                        'room_code'    => $r->room_code,
+                        'room_status'  => $r->room_status,
+                        'clean_status' => $r->room ? $r->room->clean_status : null,
+                        'check_in'     => $r->check_in,
+                        'check_out'    => $r->check_out,
+                    ];
+                })->values(),
+            ];
+        }
+
+        return response()->json([
+            'occupied'       => $occupiedList,
+            'occupied_count' => count($occupiedList),
+        ]);
+    }
+
     public function stats()
     {
         $now   = Carbon::now('Asia/Ho_Chi_Minh');
