@@ -230,7 +230,7 @@ const roomStats = ref({
 const totalRooms = computed(() => roomStats.value.overview.total || rawRoomsData.value.length)
 const arrivalCount = computed(() => roomStats.value.overview.arrivalActual || 0)
 const departureCount = computed(() => roomStats.value.overview.departureActual || 0)
-const occupiedCount = computed(() => roomStats.value.overview.occupiedActual || 0)
+const occupiedCount = computed(() => roomStats.value.overview.occupiedEndOfDay || 0)
 const statsData = computed(() => roomStats.value)
 const occupancyRate = computed(() => {
   if (roomStats.value.status && roomStats.value.status.occupiedPercent !== undefined) {
