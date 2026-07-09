@@ -30,12 +30,14 @@ const viewComponents = {
 
 // 2. Khai báo component mặc định
 const currentView = shallowRef(viewComponents['RoomMap'])
+const currentViewProps = shallowRef({})
 
 // 3. Hàm xử lý chuyển đổi cực kỳ ngắn gọn
-const changeView = (viewName) => {
+const changeView = (viewName, props = {}) => {
   // Nếu viewName có tồn tại trong danh sách thì mới chuyển
   if (viewComponents[viewName]) {
     currentView.value = viewComponents[viewName]
+    currentViewProps.value = props
   }
 }
 </script>
@@ -48,7 +50,7 @@ const changeView = (viewName) => {
 
     <div class="flex flex-1 overflow-hidden">
       <main class="flex-1 bg-gray-100 overflow-auto">
-        <component :is="currentView" />
+        <component :is="currentView" v-bind="currentViewProps" @change-view="changeView" />
       </main>
     </div>
   </div>

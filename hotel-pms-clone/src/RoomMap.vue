@@ -341,7 +341,7 @@ const openArrivalsModal = () => {
   fetchArrivals()
 }
 
-let dateTimer  = null
+let dateTimer = null
 let statsTimer = null
 
 const startClock = () => {
@@ -539,16 +539,16 @@ onBeforeUnmount(() => {
                     <div>Tổng</div>
                   </div>
                   <div class="stats-table-row">
-                    <div title="Dự kiến = chưa đến | Thực tế = đã đến">
-                      Phòng đến
-                    </div>
+                    <div title="Dự kiến = chưa đến | Thực tế = đã đến">Phòng đến</div>
                     <div>
                       <span class="stats-pill stats-pill-success">{{
                         statsData.overview.arrivalForecast
                       }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill stats-pill-info">{{ statsData.overview.arrivalActual }}</span>
+                      <span class="stats-pill stats-pill-info">{{
+                        statsData.overview.arrivalActual
+                      }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
@@ -557,16 +557,16 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div class="stats-table-row">
-                    <div title="Dự kiến = sắp đi (trong 30') | Thực tế = đã đi">
-                      Phòng đi
-                    </div>
+                    <div title="Dự kiến = sắp đi (trong 30') | Thực tế = đã đi">Phòng đi</div>
                     <div>
                       <span class="stats-pill stats-pill-danger">{{
                         statsData.overview.departureForecast
                       }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill stats-pill-info">{{ statsData.overview.departureActual }}</span>
+                      <span class="stats-pill stats-pill-info">{{
+                        statsData.overview.departureActual
+                      }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
@@ -575,14 +575,18 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div class="stats-table-row">
-                    <div title="Dự kiến = vừa đến (0–30') | Thực tế = đang ở (>30' hoặc carry-over)">
+                    <div
+                      title="Dự kiến = vừa đến (0–30') | Thực tế = đang ở (>30' hoặc carry-over)"
+                    >
                       Phòng ở
                     </div>
                     <div>
                       <span class="stats-pill">{{ statsData.overview.occupiedActual }}</span>
                     </div>
                     <div>
-                      <span class="stats-pill stats-pill-info">{{ statsData.overview.occupiedEndOfDay }}</span>
+                      <span class="stats-pill stats-pill-info">{{
+                        statsData.overview.occupiedEndOfDay
+                      }}</span>
                     </div>
                     <div>
                       <span class="stats-pill stats-pill-neutral">{{
@@ -1248,7 +1252,7 @@ onBeforeUnmount(() => {
                     <span
                       v-if="room.isOccupied || room.isArrival || room.isDeparture"
                       class="booked-check-icon"
-                      title="Phòng đã được đặt"
+                      title="Phòng đã được ở"
                       style="
                         color: #16a34a;
                         display: flex;
