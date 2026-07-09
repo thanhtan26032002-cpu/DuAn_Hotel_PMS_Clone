@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th7 08, 2026 lúc 07:08 AM
+-- Thời gian đã tạo: Th7 09, 2026 lúc 04:11 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -160,8 +160,8 @@ CREATE TABLE `booking_rooms` (
 --
 
 INSERT INTO `booking_rooms` (`id`, `booking_code`, `room_type_id`, `room_form_id`, `room_code`, `check_in`, `check_out`, `nights`, `price`, `rate_plan_code`, `discount`, `guest_name`, `adults`, `children`, `infants`, `child_breakfast_price`, `includes_breakfast`, `extra_bed`, `extra_bed_price`, `hourly_rental`, `special_requests`, `arrival_time`, `departure_time`, `reserved`, `is_priority`, `is_priority_charge`, `created_by`, `transfer_room`, `room_status`, `alm_code`, `total_amount`, `created_at`, `updated_at`) VALUES
-(1, 'GAL1', 2, 2, 'G110', '2026-06-24', '2026-06-29', 5, 670000.00, 'B2B', 0.00, 'Guest 1', 2, 0, 0, 90000.00, 1, 1, 300000.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Dirty', 'G0019233', 4850000.00, '2026-07-02 06:04:23', '2026-07-02 06:04:23'),
-(2, 'GAL1', 8, 4, 'G49', '2026-06-24', '2026-06-29', 5, 1330000.00, 'B2B', 0.00, 'Guest 1', 2, 2, 0, 90000.00, 1, 0, 0.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Ready', 'G0019232', 6650000.00, '2026-07-02 06:04:23', '2026-07-02 06:04:23');
+(1, 'GAL1', 2, 2, 'G110', '2026-07-08', '2026-07-12', 5, 670000.00, 'B2B', 0.00, 'Guest 1', 2, 0, 0, 90000.00, 1, 1, 300000.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Dirty', 'G0019233', 4850000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:08'),
+(2, 'GAL1', 8, 4, 'G49', '2026-07-08', '2026-07-12', 5, 1330000.00, 'B2B', 0.00, 'Guest 1', 2, 2, 0, 90000.00, 1, 0, 0.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Ready', 'G0019232', 6650000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:22');
 
 -- --------------------------------------------------------
 

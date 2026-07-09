@@ -19,6 +19,13 @@ const overlayStyle = ref({
   maxWidth: 'calc(100vw - 24px)',
 })
 const isStatsModalOpen = ref(false)
+const isArrivalsModalOpen = ref(false)
+const arrivalsData = ref({
+  not_arrived: /** @type {any[]} */ ([]),
+  arrived: /** @type {any[]} */ ([]),
+  not_arrived_count: 0,
+  arrived_count: 0,
+})
 
 const padNumber = (value) => String(value).padStart(2, '0')
 const currentDateTimeLabel = computed(() => {
@@ -302,6 +309,38 @@ const fetchRoomStats = async () => {
   }
 }
 
+const fetchArrivals = async () => {
+  try {
+    const response = await axios.get('http://127.0.0.1:8000/api/arrivals')
+    arrivalsData.value = response.data
+  } catch (error) {
+    console.error('Lỗi API arrivals:', error)
+  }
+}
+
+const formatStatus = (status) => {
+  if (!status) return ''
+  return 'status-' + String(status).toLowerCase().replace(/ /g, '_')
+}
+
+const expandedRows = ref({
+  not_arrived: {},
+  arrived: {},
+})
+
+const toggleExpand = (type, index) => {
+  if (expandedRows.value[type][index]) {
+    expandedRows.value[type][index] = false
+  } else {
+    expandedRows.value[type][index] = true
+  }
+}
+
+const openArrivalsModal = () => {
+  isArrivalsModalOpen.value = true
+  fetchArrivals()
+}
+
 let dateTimer = null
 const startClock = () => {
   currentDateTime.value = new Date()
@@ -437,10 +476,10 @@ onBeforeUnmount(() => {
         </label>
       </div>
 
-      <div class="pms-stat-item">
+      <button type="button" class="pms-stat-item stat-button" @click.stop="openArrivalsModal">
         <span class="stat-title">Đã đến</span>
         <span class="stat-value">{{ arrivalCount }} / {{ totalRooms }}</span>
-      </div>
+      </button>
 
       <div class="pms-stat-item">
         <span class="stat-title">Đã đi</span>
@@ -621,6 +660,284 @@ onBeforeUnmount(() => {
                 <div class="stats-summary-item">
                   <div class="summary-label">Thêm giường</div>
                   <div class="summary-value">{{ statsData.status.extraBeds }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </teleport>
+
+      <!-- MODAL ĐÃ ĐẾN -->
+      <teleport to="body">
+        <div
+          v-if="isArrivalsModalOpen"
+          class="arrivals-backdrop"
+          @click.self="isArrivalsModalOpen = false"
+        >
+          <div class="arrivals-modal" @click.stop>
+            <div class="arrivals-modal-top-bar">
+              <button
+                type="button"
+                class="arrivals-modal-close"
+                @click="isArrivalsModalOpen = false"
+              >
+                ×
+              </button>
+            </div>
+            <div class="arrivals-modal-body">
+              <!-- Bên trái: Chưa đến -->
+              <div class="arrivals-panel">
+                <div class="arrivals-panel-header">
+                  <span class="arrivals-panel-title">Danh sách phòng chưa đến</span>
+                  <span class="arrivals-count-badge">{{ arrivalsData.not_arrived_count }}</span>
+                </div>
+                <div class="arrivals-table-wrap">
+                  <table class="arrivals-table">
+                    <thead>
+                      <tr class="arrivals-table-head-green">
+                        <th><input type="checkbox" /></th>
+                        <th>Mã BK</th>
+                        <th>Mã tham chiếu</th>
+                        <th>Tên BK</th>
+                        <th>Công ty</th>
+                        <th>Tình trạng ĐK</th>
+                        <th>Tổng số phòng</th>
+                        <th>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template v-if="arrivalsData.not_arrived.length > 0">
+                        <tbody v-for="(bk, bkIdx) in arrivalsData.not_arrived" :key="bkIdx">
+                          <tr class="arrivals-row-main">
+                            <td>
+                              <div style="display: flex; align-items: center; gap: 10px">
+                                <button
+                                  type="button"
+                                  class="arrivals-expand-btn"
+                                  @click="toggleExpand('not_arrived', bkIdx)"
+                                >
+                                  {{ expandedRows.not_arrived[bkIdx] ? '-' : '+' }}
+                                </button>
+                                <input type="checkbox" />
+                              </div>
+                            </td>
+                            <td
+                              class="arrivals-code"
+                              :style="bk.booking_color ? { color: bk.booking_color } : {}"
+                            >
+                              {{ bk.booking_code }}
+                            </td>
+                            <td>{{ bk.reference_code }}</td>
+                            <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                            <td>{{ bk.company_name }}</td>
+                            <td>
+                              <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
+                                bk.status
+                              }}</span>
+                            </td>
+                            <td class="arrivals-center">
+                              <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
+                            </td>
+                            <td class="arrivals-center">
+                              <button type="button" class="arrivals-note-btn" :title="bk.notes">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#60a5fa"
+                                  stroke-width="2"
+                                  style="width: 16px; height: 16px"
+                                >
+                                  <path
+                                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                  ></path>
+                                  <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                          <!-- Sub-rows -->
+                          <template v-if="expandedRows.not_arrived[bkIdx]">
+                            <tr
+                              v-for="(rm, rmIdx) in bk.rooms"
+                              :key="'rm-' + rmIdx"
+                              class="arrivals-sub-row"
+                            >
+                              <td><input type="checkbox" /></td>
+                              <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
+                              <td></td>
+                              <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                              <td></td>
+                              <td></td>
+                              <td></td>
+                              <td class="arrivals-center">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#64748b"
+                                  stroke-width="2"
+                                  style="width: 16px; height: 16px"
+                                >
+                                  <path
+                                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                                  />
+                                </svg>
+                              </td>
+                            </tr>
+                          </template>
+                        </tbody>
+                      </template>
+                      <tr v-else>
+                        <td colspan="8" class="arrivals-nodata">
+                          <div class="arrivals-nodata-inner">
+                            <svg
+                              viewBox="0 0 64 64"
+                              fill="none"
+                              style="width: 48px; height: 48px; opacity: 0.25"
+                            >
+                              <rect
+                                x="8"
+                                y="16"
+                                width="48"
+                                height="36"
+                                rx="4"
+                                stroke="#64748b"
+                                stroke-width="3"
+                              />
+                              <path d="M8 24h48" stroke="#64748b" stroke-width="3" />
+                            </svg>
+                            <span>No data</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Bên phải: Đã đến -->
+              <div class="arrivals-panel">
+                <div class="arrivals-panel-header">
+                  <span class="arrivals-panel-title">Danh sách phòng đã đến</span>
+                  <span class="arrivals-count-badge arrivals-count-arrived">{{
+                    arrivalsData.arrived_count
+                  }}</span>
+                </div>
+                <div class="arrivals-table-wrap">
+                  <table class="arrivals-table">
+                    <thead>
+                      <tr class="arrivals-table-head-cyan">
+                        <th><input type="checkbox" /></th>
+                        <th>Mã BK</th>
+                        <th>Mã tham chiếu</th>
+                        <th>Tên BK</th>
+                        <th>Công ty</th>
+                        <th>Tình trạng ĐK</th>
+                        <th>Tổng số phòng</th>
+                        <th>Ghi chú</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template v-if="arrivalsData.arrived.length > 0">
+                        <tbody v-for="(bk, bkIdx) in arrivalsData.arrived" :key="bkIdx">
+                          <tr class="arrivals-row-main arrivals-row-checked">
+                            <td><input type="checkbox" /></td>
+                            <td
+                              class="arrivals-code"
+                              :style="bk.booking_color ? { color: bk.booking_color } : {}"
+                            >
+                              <button
+                                type="button"
+                                class="arrivals-expand-btn"
+                                @click="toggleExpand('arrived', bkIdx)"
+                              >
+                                {{ expandedRows.arrived[bkIdx] ? '-' : '+' }}
+                              </button>
+                              {{ bk.booking_code }}
+                            </td>
+                            <td>{{ bk.reference_code }}</td>
+                            <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                            <td>{{ bk.company_name }}</td>
+                            <td>
+                              <span class="arrivals-status-text" :class="formatStatus(bk.status)">{{
+                                bk.status
+                              }}</span>
+                            </td>
+                            <td class="arrivals-center">
+                              <span class="arrivals-rooms-circle">{{ bk.total_rooms }}</span>
+                            </td>
+                            <td class="arrivals-center">
+                              <button type="button" class="arrivals-note-btn" :title="bk.notes">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#60a5fa"
+                                  stroke-width="2"
+                                  style="width: 16px; height: 16px"
+                                >
+                                  <path
+                                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                  ></path>
+                                  <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                          <!-- Sub-rows -->
+                          <template v-if="expandedRows.arrived[bkIdx]">
+                            <tr
+                              v-for="(rm, rmIdx) in bk.rooms"
+                              :key="'rm-' + rmIdx"
+                              class="arrivals-sub-row"
+                            >
+                              <td><input type="checkbox" /></td>
+                              <td class="arrivals-sub-room-code">{{ rm.room_code }}</td>
+                              <td></td>
+                              <td class="arrivals-name-bold">{{ bk.guest_name }}</td>
+                              <td></td>
+                              <td></td>
+                              <td></td>
+                              <td class="arrivals-center">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#64748b"
+                                  stroke-width="2"
+                                  style="width: 16px; height: 16px"
+                                >
+                                  <path
+                                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                                  />
+                                </svg>
+                              </td>
+                            </tr>
+                          </template>
+                        </tbody>
+                      </template>
+                      <tr v-else>
+                        <td colspan="8" class="arrivals-nodata">
+                          <div class="arrivals-nodata-inner">
+                            <svg
+                              viewBox="0 0 64 64"
+                              fill="none"
+                              style="width: 48px; height: 48px; opacity: 0.25"
+                            >
+                              <rect
+                                x="8"
+                                y="16"
+                                width="48"
+                                height="36"
+                                rx="4"
+                                stroke="#64748b"
+                                stroke-width="3"
+                              />
+                              <path d="M8 24h48" stroke="#64748b" stroke-width="3" />
+                            </svg>
+                            <span>No data</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1908,5 +2225,274 @@ onBeforeUnmount(() => {
 }
 .pms-scrollable-canvas::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+/* ===== MODAL ĐÃ ĐẾN ===== */
+.arrivals-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.arrivals-modal {
+  position: relative;
+  background: #f8fbff;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  width: 96vw;
+  max-width: 1200px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.arrivals-modal-top-bar {
+  background: #5dc3e7;
+  height: 48px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.arrivals-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #ffffff;
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity 0.2s;
+}
+.arrivals-modal-close:hover {
+  opacity: 0.8;
+}
+
+.arrivals-modal-body {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+  padding: 20px 20px 20px 20px;
+  gap: 16px;
+}
+
+.arrivals-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.arrivals-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fbff;
+  flex-shrink: 0;
+}
+
+.arrivals-panel-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.arrivals-count-badge {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.arrivals-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.arrivals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.arrivals-table thead tr.arrivals-table-head-green th {
+  background: #f6fdf8;
+}
+.arrivals-table thead tr.arrivals-table-head-cyan th {
+  background: #f0fdf4;
+}
+
+.arrivals-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.arrivals-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.arrivals-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.arrivals-row-main:hover td {
+  background: #f8faff;
+}
+
+.arrivals-row-sub td {
+  background: #f8fbff;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.arrivals-row-checked td {
+  background: #f0fdf4;
+}
+.arrivals-row-checked:hover td {
+  background: #dcfce7;
+}
+
+.arrivals-code {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.arrivals-name-bold {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12.5px;
+}
+
+.arrivals-center {
+  text-align: center;
+}
+
+.arrivals-expand-btn {
+  background: #e0f2fe;
+  color: #0ea5e9;
+  border: 1px solid #bae6fd;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  cursor: pointer;
+  border-radius: 2px;
+  font-weight: bold;
+  line-height: 1;
+}
+.arrivals-expand-btn:hover {
+  background: #bae6fd;
+}
+
+.arrivals-status-text {
+  font-weight: 600;
+  font-size: 12px;
+}
+.arrivals-status-text.status-guaranteed {
+  color: #22c55e;
+}
+.arrivals-status-text.status-tentative {
+  color: #eab308;
+}
+.arrivals-status-text.status-cancelled {
+  color: #ef4444;
+}
+.arrivals-status-text.status-no_show {
+  color: #64748b;
+}
+.arrivals-status-text.status-waitlisted {
+  color: #8b5cf6;
+}
+
+.arrivals-rooms-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.arrivals-sub-room-code {
+  font-weight: bold;
+  color: #475569;
+}
+
+.arrivals-note-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.arrivals-note-btn:hover {
+  opacity: 1;
+}
+
+.arrivals-room-status {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.arrivals-room-status.status-in {
+  background: #d1fae5;
+  color: #065f46;
+}
+.arrivals-room-status.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.arrivals-nodata {
+  text-align: center;
+  padding: 48px 0 !important;
+}
+.arrivals-nodata-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 14px;
 }
 </style>
