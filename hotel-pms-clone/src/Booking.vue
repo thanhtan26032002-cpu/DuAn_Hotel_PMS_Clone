@@ -142,17 +142,30 @@
     </div>
 
     <div class="reg-meta-info" v-if="bookingData">
-      <span class="meta-item">Tên đăng ký: <strong>{{ bookingData.guest_name }}</strong></span>
-      <span class="meta-item">Trạng thái: 
+      <span class="meta-item"
+        >Tên đăng ký: <strong>{{ bookingData.guest_name }}</strong></span
+      >
+      <span class="meta-item"
+        >Trạng thái:
         <strong :style="{ color: bookingData.booking_color || '#16a34a' }">
           {{ bookingData.status?.status_name || 'N/A' }}
         </strong>
       </span>
-      <span class="meta-item">Ngày đến: <strong>{{ formatDate(bookingData.check_in) }}</strong></span>
-      <span class="meta-item">Ngày đi: <strong>{{ formatDate(bookingData.check_out) }}</strong></span>
-      <span class="meta-item">Đặt cọc: <strong>{{ formatCurrency(bookingData.deposit) }}</strong></span>
-      <span class="meta-item">Công ty: <strong>{{ bookingData.company?.name || 'N/A' }}</strong></span>
-      <span class="meta-item">Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span>
+      <span class="meta-item"
+        >Ngày đến: <strong>{{ formatDate(bookingData.check_in) }}</strong></span
+      >
+      <span class="meta-item"
+        >Ngày đi: <strong>{{ formatDate(bookingData.check_out) }}</strong></span
+      >
+      <span class="meta-item"
+        >Đặt cọc: <strong>{{ formatCurrency(bookingData.deposit) }}</strong></span
+      >
+      <span class="meta-item"
+        >Công ty: <strong>{{ bookingData.company?.name || 'N/A' }}</strong></span
+      >
+      <span class="meta-item"
+        >Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span
+      >
     </div>
     <div class="reg-meta-info" v-else>
       <span>Đang tải dữ liệu...</span>
@@ -256,59 +269,119 @@
         </thead>
         <tbody>
           <template v-if="groupedRooms && Object.keys(groupedRooms).length > 0">
-            <template v-for="(rooms, groupName) in groupedRooms" :key="groupName">
-              <tr class="sub-group-row">
-                <td class="text-center"><button class="btn-collapse">-</button></td>
-                <td><input type="checkbox" /></td>
-                <td colspan="28"><strong>{{ groupName }} ({{ rooms.length }})</strong></td>
-                <td class="sticky-col-right bg-sub-group"></td>
-              </tr>
-              <tr v-for="(room, index) in rooms" :key="room.id" class="data-row">
-                <td class="text-center"><button class="btn-expand">+</button></td>
-                <td><input type="checkbox" /></td>
-                <td class="text-center">{{ index + 1 }}</td>
-                <td>{{ room.room_type?.type_name || 'N/A' }}</td>
-                <td>{{ room.room_form?.form_name || 'N/A' }}</td>
-                <td class="text-bold">{{ room.room?.room_number || room.room_code || 'Chưa gán' }}</td>
-                <td>{{ formatDate(room.check_in) }}</td>
-                <td>{{ formatDate(room.check_out) }}</td>
-                <td class="text-center">{{ room.nights }}</td>
-                <td class="text-right">{{ formatCurrency(room.price) }}</td>
-                <td><input type="text" class="input-table" :value="room.rate_plan_code" placeholder="Mã giá" /></td>
-                <td class="text-right">{{ formatCurrency(room.discount) }}</td>
-                <td>{{ room.guest_name || bookingData.guest_name }}</td>
-                <td class="text-center">{{ room.adults }}</td>
-                <td class="text-center">{{ room.infants }}</td>
-                <td class="text-center">{{ room.children }}</td>
-                <td class="text-center"><button class="btn-detail" v-if="room.child_breakfast_price > 0">Chi tiết</button></td>
-                <td class="text-center">
-                  <label class="ios-switch">
-                    <input type="checkbox" :checked="room.includes_breakfast" disabled />
-                    <span class="slider"></span>
-                  </label>
-                </td>
-                <td class="text-center">
-                  <span class="mr-1">{{ room.extra_bed ? 1 : 0 }}</span>
-                  <button class="btn-detail" v-if="room.extra_bed">Chi tiết</button>
-                </td>
-                <td class="text-center">{{ formatCurrency(room.extra_bed_price) }}</td>
-                <td class="text-center">
-                  <label class="ios-switch">
-                    <input type="checkbox" :checked="room.hourly_rental" disabled />
-                    <span class="slider"></span>
-                  </label>
-                </td>
-                <td class="text-center"><button class="btn-detail" v-if="room.special_requests">Yêu cầu</button></td>
-                <td class="text-center">{{ formatTime(room.arrival_time) }}</td>
-                <td class="text-center">{{ formatTime(room.departure_time) }}</td>
-                <td class="text-center"><input type="checkbox" :checked="room.reserved" disabled/></td>
-                <td>{{ room.created_by }}</td>
-                <td>{{ room.transfer_room }}</td>
-                <td>{{ room.room_status }}</td>
-                <td>{{ room.alm_code }}</td>
-                <td>{{ room.room_code }}</td>
-                <td class="text-right text-bold sticky-col-right bg-white">{{ formatCurrency(room.total_amount) }}</td>
-              </tr>
+            <tr class="group-row" style="background-color: #d9edf7">
+              <td class="text-center">
+                <button class="btn-collapse" @click="toggleMainGroup">
+                  {{ isMainGroupExpanded ? '-' : '+' }}
+                </button>
+              </td>
+              <td></td>
+              <td colspan="28">
+                <div class="group-title" style="display: flex; align-items: center">
+                  <strong
+                    >Tình trạng:
+                    {{
+                      bookingData.status?.status_name === 'Guaranteed'
+                        ? 'Phòng ở'
+                        : bookingData.status?.status_name || 'Đăng ký'
+                    }}
+                    ({{ totalRooms }})</strong
+                  >
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="0"
+                    class="custom-slider ml-2"
+                    style="width: 150px; pointer-events: none"
+                  />
+                </div>
+              </td>
+              <td class="sticky-col-right" style="background-color: #d9edf7"></td>
+            </tr>
+
+            <template v-if="isMainGroupExpanded">
+              <template v-for="(rooms, groupName) in groupedRooms" :key="groupName">
+                <tr class="sub-group-row">
+                  <td class="text-center">
+                    <button class="btn-collapse" @click="toggleSubGroup(groupName)">
+                      {{ expandedGroups[groupName] ? '-' : '+' }}
+                    </button>
+                  </td>
+                  <td><input type="checkbox" /></td>
+                  <td colspan="28">
+                    <strong>{{ groupName }} ({{ rooms.length }})</strong>
+                  </td>
+                  <td class="sticky-col-right bg-sub-group"></td>
+                </tr>
+                <template v-if="expandedGroups[groupName]">
+                  <tr v-for="(room, index) in rooms" :key="room.id" class="data-row">
+                    <td class="text-center"><button class="btn-expand">+</button></td>
+                    <td><input type="checkbox" /></td>
+                    <td class="text-center">{{ index + 1 }}</td>
+                    <td>{{ room.room_type?.type_name || 'N/A' }}</td>
+                    <td>{{ room.room_form?.form_name || 'N/A' }}</td>
+                    <td class="text-bold">
+                      {{ room.room?.room_number || room.room_code || 'Chưa gán' }}
+                    </td>
+                    <td>{{ formatDate(room.check_in) }}</td>
+                    <td>{{ formatDate(room.check_out) }}</td>
+                    <td class="text-center">{{ room.nights }}</td>
+                    <td class="text-right">{{ formatCurrency(room.price) }}</td>
+                    <td>
+                      <input
+                        type="text"
+                        class="input-table"
+                        :value="room.rate_plan_code"
+                        placeholder="Mã giá"
+                      />
+                    </td>
+                    <td class="text-right">{{ formatCurrency(room.discount) }}</td>
+                    <td>{{ room.guest_name || bookingData.guest_name }}</td>
+                    <td class="text-center">{{ room.adults }}</td>
+                    <td class="text-center">{{ room.infants }}</td>
+                    <td class="text-center">{{ room.children }}</td>
+                    <td class="text-center">
+                      <button class="btn-detail" v-if="room.child_breakfast_price > 0">
+                        Chi tiết
+                      </button>
+                    </td>
+                    <td class="text-center">
+                      <label class="ios-switch">
+                        <input type="checkbox" :checked="room.includes_breakfast" disabled />
+                        <span class="slider"></span>
+                      </label>
+                    </td>
+                    <td class="text-center">
+                      <span class="mr-1">{{ room.extra_bed ? 1 : 0 }}</span>
+                      <button class="btn-detail" v-if="room.extra_bed">Chi tiết</button>
+                    </td>
+                    <td class="text-center">{{ formatCurrency(room.extra_bed_price) }}</td>
+                    <td class="text-center">
+                      <label class="ios-switch">
+                        <input type="checkbox" :checked="room.hourly_rental" disabled />
+                        <span class="slider"></span>
+                      </label>
+                    </td>
+                    <td class="text-center">
+                      <button class="btn-detail" v-if="room.special_requests">Yêu cầu</button>
+                    </td>
+                    <td class="text-center">{{ formatTime(room.arrival_time) }}</td>
+                    <td class="text-center">{{ formatTime(room.departure_time) }}</td>
+                    <td class="text-center">
+                      <input type="checkbox" :checked="room.reserved" disabled />
+                    </td>
+                    <td>{{ room.created_by }}</td>
+                    <td>{{ room.transfer_room }}</td>
+                    <td>{{ room.room_status }}</td>
+                    <td>{{ room.alm_code }}</td>
+                    <td>{{ room.room_code }}</td>
+                    <td class="text-right text-bold sticky-col-right bg-white">
+                      {{ formatCurrency(room.total_amount) }}
+                    </td>
+                  </tr>
+                </template>
+              </template>
             </template>
           </template>
           <tr v-else>
@@ -324,7 +397,9 @@
             <td class="text-center text-bold">{{ totalInfants }}</td>
             <td class="text-center text-bold">{{ totalChildren }}</td>
             <td colspan="14"></td>
-            <td class="text-right text-bold total-highlight sticky-col-right">{{ formatCurrency(grandTotal) }}</td>
+            <td class="text-right text-bold total-highlight sticky-col-right">
+              {{ formatCurrency(grandTotal) }}
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -333,13 +408,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 
 const props = defineProps({
   bookingCode: {
     type: String,
-    default: 'GAL1' // Mặc định lấy GAL1 nếu không có mã nào truyền sang
-  }
+    default: 'GAL1', // Mặc định lấy GAL1 nếu không có mã nào truyền sang
+  },
 })
 
 const bookingData = ref(null)
@@ -387,22 +462,66 @@ const groupedRooms = computed(() => {
   }, {})
 })
 
+const isMainGroupExpanded = ref(true)
+const expandedGroups = reactive({})
+
+watch(
+  groupedRooms,
+  (newGroups) => {
+    if (newGroups) {
+      Object.keys(newGroups).forEach((groupName) => {
+        if (expandedGroups[groupName] === undefined) {
+          expandedGroups[groupName] = true
+        }
+      })
+    }
+  },
+  { immediate: true },
+)
+
+const toggleMainGroup = () => {
+  isMainGroupExpanded.value = !isMainGroupExpanded.value
+}
+
+const toggleSubGroup = (groupName) => {
+  expandedGroups[groupName] = !expandedGroups[groupName]
+}
+
 // Tính tổng footer
 const totalRooms = computed(() => bookingData.value?.booking_rooms?.length || 0)
 const totalPrice = computed(() => {
-  return bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseFloat(room.price || 0), 0) || 0
+  return (
+    bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseFloat(room.price || 0), 0) ||
+    0
+  )
 })
 const totalAdults = computed(() => {
-  return bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseInt(room.adults || 0), 0) || 0
+  return (
+    bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseInt(room.adults || 0), 0) ||
+    0
+  )
 })
 const totalInfants = computed(() => {
-  return bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseInt(room.infants || 0), 0) || 0
+  return (
+    bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseInt(room.infants || 0), 0) ||
+    0
+  )
 })
 const totalChildren = computed(() => {
-  return bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseInt(room.children || 0), 0) || 0
+  return (
+    bookingData.value?.booking_rooms?.reduce(
+      (sum, room) => sum + parseInt(room.children || 0),
+      0,
+    ) || 0
+  )
 })
 const grandTotal = computed(() => {
-  return bookingData.value?.booking_rooms?.reduce((sum, room) => sum + parseFloat(room.total_amount || 0), 0) || 0
+  return (
+    bookingData.value?.booking_rooms?.reduce(
+      (sum, room) => sum + parseFloat(room.total_amount || 0),
+      0,
+    ) || 0
+  )
 })
 
 onMounted(() => {
