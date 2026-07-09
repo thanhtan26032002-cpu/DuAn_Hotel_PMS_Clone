@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th7 09, 2026 lúc 04:11 AM
+-- Thời gian đã tạo: Th7 09, 2026 lúc 06:10 AM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -125,6 +125,7 @@ CREATE TABLE `booking_rooms` (
   `room_type_id` int(11) DEFAULT NULL COMMENT 'Khóa ngoại tới Room Types',
   `room_form_id` int(11) DEFAULT NULL COMMENT 'Khóa ngoại tới Room Forms',
   `room_code` varchar(50) DEFAULT NULL COMMENT 'Khóa ngoại tới Rooms (Mã phòng)',
+  `employee_code` varchar(50) DEFAULT NULL COMMENT 'Mã nhân viên phụ trách',
   `check_in` date NOT NULL COMMENT 'Ngày đến của phòng',
   `check_out` date NOT NULL COMMENT 'Ngày đi của phòng',
   `nights` int(11) DEFAULT 0 COMMENT 'Đêm',
@@ -159,9 +160,9 @@ CREATE TABLE `booking_rooms` (
 -- Đang đổ dữ liệu cho bảng `booking_rooms`
 --
 
-INSERT INTO `booking_rooms` (`id`, `booking_code`, `room_type_id`, `room_form_id`, `room_code`, `check_in`, `check_out`, `nights`, `price`, `rate_plan_code`, `discount`, `guest_name`, `adults`, `children`, `infants`, `child_breakfast_price`, `includes_breakfast`, `extra_bed`, `extra_bed_price`, `hourly_rental`, `special_requests`, `arrival_time`, `departure_time`, `reserved`, `is_priority`, `is_priority_charge`, `created_by`, `transfer_room`, `room_status`, `alm_code`, `total_amount`, `created_at`, `updated_at`) VALUES
-(1, 'GAL1', 2, 2, 'G110', '2026-07-08', '2026-07-12', 5, 670000.00, 'B2B', 0.00, 'Guest 1', 2, 0, 0, 90000.00, 1, 1, 300000.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Dirty', 'G0019233', 4850000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:08'),
-(2, 'GAL1', 8, 4, 'G49', '2026-07-08', '2026-07-12', 5, 1330000.00, 'B2B', 0.00, 'Guest 1', 2, 2, 0, 90000.00, 1, 0, 0.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Ready', 'G0019232', 6650000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:22');
+INSERT INTO `booking_rooms` (`id`, `booking_code`, `room_type_id`, `room_form_id`, `room_code`, `employee_code`, `check_in`, `check_out`, `nights`, `price`, `rate_plan_code`, `discount`, `guest_name`, `adults`, `children`, `infants`, `child_breakfast_price`, `includes_breakfast`, `extra_bed`, `extra_bed_price`, `hourly_rental`, `special_requests`, `arrival_time`, `departure_time`, `reserved`, `is_priority`, `is_priority_charge`, `created_by`, `transfer_room`, `room_status`, `alm_code`, `total_amount`, `created_at`, `updated_at`) VALUES
+(1, 'GAL1', 2, 2, 'G110', NULL, '2026-07-08', '2026-07-12', 5, 670000.00, 'B2B', 0.00, 'Guest 1', 2, 0, 0, 90000.00, 1, 1, 300000.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Dirty', 'G0019233', 4850000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:08'),
+(2, 'GAL1', 8, 4, 'G49', NULL, '2026-07-08', '2026-07-12', 5, 1330000.00, 'B2B', 0.00, 'Guest 1', 2, 2, 0, 90000.00, 1, 0, 0.00, 0, NULL, '14:00:00', '12:00:00', 0, 0, 0, NULL, NULL, 'Vacant Ready', 'G0019232', 6650000.00, '2026-07-02 06:04:23', '2026-07-08 07:34:22');
 
 -- --------------------------------------------------------
 
@@ -306,6 +307,52 @@ CREATE TABLE `currencies` (
 
 INSERT INTO `currencies` (`currency_code`, `image_url`, `currency_name`, `country`, `is_primary`, `is_active`, `decimal_places`, `exchange_rate`, `created_at`, `updated_at`) VALUES
 ('VND', NULL, 'Viet Nam Dong', 'Vietnam', 1, 1, 0, 1.000000, '2026-07-02 06:04:22', '2026-07-02 06:04:22');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `employees`
+--
+
+CREATE TABLE `employees` (
+  `employee_code` varchar(50) NOT NULL COMMENT 'Mã nhân viên (NB + số tăng tự động)',
+  `fullname` varchar(255) NOT NULL COMMENT 'Tên nhân viên',
+  `position` varchar(100) DEFAULT NULL COMMENT 'Vị trí công việc',
+  `department` varchar(100) DEFAULT NULL COMMENT 'Bộ phận',
+  `date_of_birth` date DEFAULT NULL COMMENT 'Ngày sinh',
+  `phone` varchar(50) DEFAULT NULL COMMENT 'Số điện thoại',
+  `email` varchar(255) DEFAULT NULL COMMENT 'Email',
+  `address` varchar(255) DEFAULT NULL COMMENT 'Địa chỉ',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Bảng quản lý nhân viên';
+
+--
+-- Đang đổ dữ liệu cho bảng `employees`
+--
+
+INSERT INTO `employees` (`employee_code`, `fullname`, `position`, `department`, `date_of_birth`, `phone`, `email`, `address`, `created_at`, `updated_at`) VALUES
+('NB1', 'Trần Thị Thu', 'Kế toán viên', 'Bộ Phận Kế Toán', '1992-05-10', '0911222333', 'thutran@hotel.com', '12 Nguyễn Văn Cừ, Quận 5, TP.HCM', '2026-07-09 04:09:17', '2026-07-09 04:09:17'),
+('NB2', 'Lê Hoàng Trưởng', 'Trưởng bộ phận', 'Bộ Phận Lễ Tân', '1988-11-20', '0988777666', 'hoangtruong@hotel.com', '45 Lê Lợi, Quận 1, TP.HCM', '2026-07-09 04:09:17', '2026-07-09 04:09:17'),
+('NB3', 'Phạm Văn An', 'Nhân viên Lễ tân', 'Bộ Phận Lễ Tân', '1997-02-15', '0900111222', 'vanan@hotel.com', '10 Phạm Ngọc Thạch, Quận 3, TP.HCM', '2026-07-09 04:09:17', '2026-07-09 04:09:17'),
+('NB4', 'Nguyễn Thị Bình', 'Nhân viên Lễ tân', 'Bộ Phận Lễ Tân', '1998-07-08', '0933444555', 'thibinh@hotel.com', '20 Điện Biên Phủ, Bình Thạnh, TP.HCM', '2026-07-09 04:09:17', '2026-07-09 04:09:17'),
+('NB5', 'Trần Văn Cường', 'Nhân viên Lễ tân', 'Bộ Phận Lễ Tân', '1999-12-25', '0977888999', 'vancuong@hotel.com', '30 Võ Văn Ngân, Thủ Đức, TP.HCM', '2026-07-09 04:09:17', '2026-07-09 04:09:17');
+
+--
+-- Bẫy `employees`
+--
+DELIMITER $$
+CREATE TRIGGER `trg_employees_before_insert` BEFORE INSERT ON `employees` FOR EACH ROW BEGIN
+    DECLARE next_id INT;
+    
+    -- Tự dò số lớn nhất hiện tại sau chữ NB để tăng lên 1
+    SELECT IFNULL(MAX(CAST(SUBSTRING(employee_code, 3) AS UNSIGNED)), 0) + 1 INTO next_id FROM `employees`;
+    
+    -- Tự động ghép chữ NB với số tăng dần
+    SET NEW.employee_code = CONCAT('NB', next_id);
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -662,7 +709,7 @@ CREATE TABLE `rooms` (
 --
 
 INSERT INTO `rooms` (`id`, `room_code`, `room_number`, `room_type_id`, `room_form_id`, `max_guests`, `extra_beds`, `area`, `floor`, `grid_row`, `grid_col`, `linked_room_number`, `clean_status`, `is_dnd`, `is_makeup_room`, `is_internal`, `is_owner_room`, `note`, `created_at`, `updated_at`) VALUES
-(1, 'G1', '1501', 9, 5, 2, 1, 'A', '15', 11, 1, NULL, 'Clean', 0, 0, 0, 0, NULL, '2026-07-02 06:04:22', '2026-07-02 06:04:22'),
+(1, 'G1', '1501', 9, 5, 2, 0, 'A', '15', 11, 1, NULL, 'Clean', 0, 0, 0, 0, NULL, '2026-07-02 06:04:22', '2026-07-09 03:13:06'),
 (10, 'G10', '1003', 5, 2, 3, 0, 'A', '10', 7, 3, NULL, 'Clean', 0, 0, 0, 0, NULL, '2026-07-02 06:04:22', '2026-07-02 06:04:22'),
 (100, 'G100', '807', 3, 3, 3, 0, 'A', '8', 5, 7, NULL, 'Clean', 0, 0, 0, 0, NULL, '2026-07-02 06:04:22', '2026-07-02 06:04:22'),
 (101, 'G101', '809', 3, 3, 3, 0, 'A', '8', 5, 9, NULL, 'Clean', 0, 0, 0, 0, NULL, '2026-07-02 06:04:22', '2026-07-02 06:04:22'),
@@ -1045,7 +1092,8 @@ ALTER TABLE `booking_rooms`
   ADD KEY `room_type_id` (`room_type_id`),
   ADD KEY `room_form_id` (`room_form_id`),
   ADD KEY `room_code` (`room_code`),
-  ADD KEY `rate_plan_code` (`rate_plan_code`);
+  ADD KEY `rate_plan_code` (`rate_plan_code`),
+  ADD KEY `idx_booking_rooms_employee` (`employee_code`);
 
 --
 -- Chỉ mục cho bảng `booking_room_special_requests`
@@ -1082,6 +1130,12 @@ ALTER TABLE `companies`
 --
 ALTER TABLE `currencies`
   ADD PRIMARY KEY (`currency_code`);
+
+--
+-- Chỉ mục cho bảng `employees`
+--
+ALTER TABLE `employees`
+  ADD PRIMARY KEY (`employee_code`);
 
 --
 -- Chỉ mục cho bảng `hotel_services`
@@ -1339,7 +1393,8 @@ ALTER TABLE `booking_rooms`
   ADD CONSTRAINT `booking_rooms_ibfk_2` FOREIGN KEY (`room_type_id`) REFERENCES `room_types` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `booking_rooms_ibfk_3` FOREIGN KEY (`room_form_id`) REFERENCES `room_forms` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `booking_rooms_ibfk_4` FOREIGN KEY (`room_code`) REFERENCES `rooms` (`room_code`) ON DELETE SET NULL,
-  ADD CONSTRAINT `booking_rooms_ibfk_5` FOREIGN KEY (`rate_plan_code`) REFERENCES `rate_plans` (`plan_code`) ON DELETE SET NULL;
+  ADD CONSTRAINT `booking_rooms_ibfk_5` FOREIGN KEY (`rate_plan_code`) REFERENCES `rate_plans` (`plan_code`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_booking_rooms_employees` FOREIGN KEY (`employee_code`) REFERENCES `employees` (`employee_code`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `booking_room_special_requests`
