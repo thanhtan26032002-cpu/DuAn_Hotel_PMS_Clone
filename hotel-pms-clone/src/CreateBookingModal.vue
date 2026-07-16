@@ -621,7 +621,7 @@ watch(
 
         roomData.value[rt.id] = {
           occupied: 0,
-          available: rt.type_short_name === 'DLXTB' ? 2 : 0,
+          available: rt.total_rooms || 0,
           quantity: 0,
           price: 0,
           adults: defaultAdults,

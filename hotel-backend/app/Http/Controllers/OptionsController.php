@@ -16,7 +16,13 @@ class OptionsController extends Controller
         $marketSegments = DB::table('market_segments')->select('code', 'name')->get();
         $bookingSources = DB::table('booking_sources')->select('code', 'name')->get();
         $bookers = DB::table('bookers')->select('id', 'name', 'phone', 'email', 'address', 'notes')->get();
-        $roomTypes = DB::table('room_types')->select('id', 'type_name', 'type_short_name')->where('is_active', 1)->orderBy('id')->get();
+        $roomTypes = DB::table('room_types')
+            ->leftJoin('rooms', 'room_types.id', '=', 'rooms.room_type_id')
+            ->select('room_types.id', 'room_types.type_name', 'room_types.type_short_name', DB::raw('count(rooms.room_code) as total_rooms'))
+            ->where('room_types.is_active', 1)
+            ->groupBy('room_types.id', 'room_types.type_name', 'room_types.type_short_name')
+            ->orderBy('room_types.id')
+            ->get();
 
         return response()->json([
             'reservation_statuses' => $reservationStatuses,
