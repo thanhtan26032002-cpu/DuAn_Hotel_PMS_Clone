@@ -391,10 +391,9 @@ class RoomController extends Controller
         // Thực tế: đã qua departure_time (đã đi)
         // ============================================================
 
-        // Dự kiến: 30 phút trước departure_time (cảnh báo sắp đi)
+        // Dự kiến: toàn bộ phòng check out hôm nay nhưng chưa đi
         $departureForecast = DB::table('booking_rooms')
             ->whereDate('check_out', $today)
-            ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) - INTERVAL 30 MINUTE <= ?", [$nowStr])
             ->whereRaw("TIMESTAMP(check_out, COALESCE(departure_time, '12:00:00')) > ?", [$nowStr])
             ->count();
 

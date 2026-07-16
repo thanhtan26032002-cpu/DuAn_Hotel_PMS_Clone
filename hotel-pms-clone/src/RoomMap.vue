@@ -241,7 +241,9 @@ const roomStats = ref({
 })
 const totalRooms = computed(() => roomStats.value.overview.total || rawRoomsData.value.length)
 const arrivalCount = computed(() => roomStats.value.overview.arrivalActual || 0)
+const arrivalTotal = computed(() => (roomStats.value.overview.arrivalActual || 0) + (roomStats.value.overview.arrivalForecast || 0))
 const departureCount = computed(() => roomStats.value.overview.departureActual || 0)
+const departureTotal = computed(() => (roomStats.value.overview.departureActual || 0) + (roomStats.value.overview.departureForecast || 0))
 const occupiedCount = computed(() => roomStats.value.overview.occupiedEndOfDay || 0)
 const statsData = computed(() => roomStats.value)
 const occupancyRate = computed(() => {
@@ -540,12 +542,12 @@ onBeforeUnmount(() => {
 
       <button type="button" class="pms-stat-item stat-button" @click.stop="openArrivalsModal">
         <span class="stat-title">Đã đến</span>
-        <span class="stat-value">{{ arrivalCount }} / {{ totalRooms }}</span>
+        <span class="stat-value">{{ arrivalCount }} / {{ arrivalTotal }}</span>
       </button>
 
       <button type="button" class="pms-stat-item stat-button" @click.stop="openDeparturesModal">
         <span class="stat-title">Đã đi</span>
-        <span class="stat-value">{{ departureCount }} / {{ totalRooms }}</span>
+        <span class="stat-value">{{ departureCount }} / {{ departureTotal }}</span>
       </button>
 
       <button type="button" class="pms-stat-item stat-button" @click.stop="openOccupiedModal">
