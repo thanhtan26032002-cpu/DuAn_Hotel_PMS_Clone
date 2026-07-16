@@ -173,7 +173,13 @@
       class="reg-meta-info-wrapper"
       @mouseenter="metaHovered = true"
       @mouseleave="metaHovered = false"
+      @mousemove="handleMouseMove"
+      @click="openModalWithData"
+      style="cursor: pointer; position: relative;"
     >
+      <div v-if="metaHovered" class="custom-tooltip" :style="{ left: mouseX + 'px', top: mouseY + 'px' }">
+        Xem chi tiết
+      </div>
       <div class="reg-meta-info" v-if="bookingData && !bookingData.isNew">
         <span class="meta-item"
           >Tên đăng ký: <strong>{{ bookingData.guest_name }}</strong></span
@@ -199,9 +205,6 @@
         <span class="meta-item"
           >Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span
         >
-        <button v-if="metaHovered" class="btn-xem-chi-tiet" @click="openModalWithData">
-          Xem chi tiết
-        </button>
       </div>
       <div class="reg-meta-info" v-else-if="bookingData && bookingData.isNew">
         <span class="meta-item">Tên đăng ký: <strong></strong></span>
@@ -462,9 +465,13 @@
       </table>
     </div>
     <CreateBookingModal
-      :isOpen="showCreateBookingModal"
-      :initialData="modalInitialData"
-      @close="handleModalClose"
+      :is-open="showCreateBookingModal"
+      @close="handleCreateModalClose"
+    />
+    <RegistrationInfoModal
+      :is-open="showRegistrationInfoModal"
+      :initial-data="modalInitialData"
+      @close="handleRegistrationModalClose"
     />
   </div>
 </template>
@@ -472,8 +479,10 @@
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import CreateBookingModal from './CreateBookingModal.vue'
+import RegistrationInfoModal from './RegistrationInfoModal.vue'
 
 const showCreateBookingModal = ref(false)
+const showRegistrationInfoModal = ref(false)
 
 const props = defineProps({
   bookingCode: {
@@ -492,11 +501,21 @@ const activeTabId = ref('initial')
 const hoveredTabId = ref(null)
 
 const metaHovered = ref(false)
+const mouseX = ref(0)
+const mouseY = ref(0)
+
+const handleMouseMove = (event) => {
+  // Get coordinates relative to reg-meta-info-wrapper
+  const rect = event.currentTarget.getBoundingClientRect()
+  mouseX.value = event.clientX - rect.left + 15
+  mouseY.value = event.clientY - rect.top + 15
+}
+
 const modalInitialData = ref(null)
 
 const openModalWithData = () => {
   modalInitialData.value = bookingData.value
-  showCreateBookingModal.value = true
+  showRegistrationInfoModal.value = true
 }
 
 const handleTabClick = (tab) => {
@@ -506,11 +525,19 @@ const handleTabClick = (tab) => {
   }
 }
 
-const handleModalClose = () => {
+const handleCreateModalClose = () => {
   showCreateBookingModal.value = false
   const newId = `NEW_${Date.now()}`
-  bookingTabs.value.push({ id: newId, title: 'New Booking' })
+  bookingTabs.value.push({
+    id: newId,
+    title: 'New Booking',
+  })
+  bookingDataMap.value[newId] = { isNew: true }
   activeTabId.value = newId
+}
+
+const handleRegistrationModalClose = () => {
+  showRegistrationInfoModal.value = false
 }
 
 const removeTab = (id) => {
@@ -743,9 +770,19 @@ onMounted(() => {
   padding: 4px 12px;
   font-size: 13px;
   cursor: pointer;
-  font-weight: 500;
   white-space: nowrap;
   transition: background 0.2s;
+}
+.custom-tooltip {
+  position: absolute;
+  background-color: #5bc0de;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
 }
 .btn-xem-chi-tiet:hover {
   background-color: #31b0d5;
