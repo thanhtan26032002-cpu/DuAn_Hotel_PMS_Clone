@@ -73,7 +73,7 @@ CREATE TABLE `bookings` (
   `payment_method_code` varchar(50) DEFAULT NULL COMMENT 'Phương thức thanh toán',
   `reference_code` varchar(100) DEFAULT NULL COMMENT 'Mã tham chiếu',
   `deposit` decimal(15,2) DEFAULT 0.00 COMMENT 'Đặt cọc',
-  `seller` varchar(255) DEFAULT NULL COMMENT 'Người bán',
+  `employee_code` varchar(50) DEFAULT NULL COMMENT 'Khóa ngoại tới Bảng Nhân viên (Người bán)',
   `remaining_debt` decimal(15,2) DEFAULT 0.00 COMMENT 'Công nợ còn lại',
   `market_segment_code` varchar(50) DEFAULT NULL COMMENT 'Thị trường',
   `booking_source_code` varchar(50) DEFAULT NULL COMMENT 'Nguồn khách',
@@ -91,8 +91,8 @@ CREATE TABLE `bookings` (
 -- Đang đổ dữ liệu cho bảng `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `booking_code`, `guest_name`, `check_in`, `check_out`, `nights`, `status_id`, `confirmed_date`, `company_code`, `member_company_id`, `management_department_code`, `payment_method_code`, `reference_code`, `deposit`, `seller`, `remaining_debt`, `market_segment_code`, `booking_source_code`, `booker_id`, `notes`, `special_requests`, `is_git`, `is_vat`, `created_at`, `updated_at`, `booking_color`) VALUES
-(1, 'GAL1', 'Nguyễn Văn A', '2026-06-24', '2026-06-29', 5, 1, '2026-06-24', 'CTY0001', NULL, NULL, 'CA', '24110011', 0.00, 'Demo', 0.00, 'FIT', 'FIT', 2, NULL, NULL, 0, 0, '2026-07-02 06:04:23', '2026-07-02 06:04:23', '#60a5fa');
+INSERT INTO `bookings` (`id`, `booking_code`, `guest_name`, `check_in`, `check_out`, `nights`, `status_id`, `confirmed_date`, `company_code`, `member_company_id`, `management_department_code`, `payment_method_code`, `reference_code`, `deposit`, `employee_code`, `remaining_debt`, `market_segment_code`, `booking_source_code`, `booker_id`, `notes`, `special_requests`, `is_git`, `is_vat`, `created_at`, `updated_at`, `booking_color`) VALUES
+(1, 'GAL1', 'Nguyễn Văn A', '2026-06-24', '2026-06-29', 5, 1, '2026-06-24', 'CTY0001', NULL, NULL, 'CA', '24110011', 0.00, 'NB1', 0.00, 'FIT', 'FIT', 2, NULL, NULL, 0, 0, '2026-07-02 06:04:23', '2026-07-02 06:04:23', '#60a5fa');
 
 --
 -- Bẫy `bookings`
@@ -1081,7 +1081,8 @@ ALTER TABLE `bookings`
   ADD KEY `payment_method_code` (`payment_method_code`),
   ADD KEY `market_segment_code` (`market_segment_code`),
   ADD KEY `booking_source_code` (`booking_source_code`),
-  ADD KEY `booker_id` (`booker_id`);
+  ADD KEY `booker_id` (`booker_id`),
+  ADD KEY `employee_code` (`employee_code`);
 
 --
 -- Chỉ mục cho bảng `booking_rooms`
@@ -1383,7 +1384,8 @@ ALTER TABLE `bookings`
   ADD CONSTRAINT `bookings_ibfk_5` FOREIGN KEY (`payment_method_code`) REFERENCES `payment_methods` (`payment_code`) ON DELETE SET NULL,
   ADD CONSTRAINT `bookings_ibfk_6` FOREIGN KEY (`market_segment_code`) REFERENCES `market_segments` (`code`) ON DELETE SET NULL,
   ADD CONSTRAINT `bookings_ibfk_7` FOREIGN KEY (`booking_source_code`) REFERENCES `booking_sources` (`code`) ON DELETE SET NULL,
-  ADD CONSTRAINT `bookings_ibfk_8` FOREIGN KEY (`booker_id`) REFERENCES `bookers` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `bookings_ibfk_8` FOREIGN KEY (`booker_id`) REFERENCES `bookers` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `bookings_ibfk_9` FOREIGN KEY (`employee_code`) REFERENCES `employees` (`employee_code`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `booking_rooms`

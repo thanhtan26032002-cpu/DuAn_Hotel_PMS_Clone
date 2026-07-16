@@ -22,4 +22,9 @@ class Bookings extends Model
     {
         return $this->belongsTo(ReservationStatus::class, 'status_id', 'id');
     }
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'employee_code', 'employee_code');
+    }
 }

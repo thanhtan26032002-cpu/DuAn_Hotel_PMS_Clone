@@ -12,6 +12,7 @@ class BookingController extends Controller
         $booking = Bookings::with([
             'company',
             'status',
+            'employee',
             'bookingRooms' => function ($query) {
                 // Ensure we get roomType, roomForm and room (for room_number)
                 $query->with(['roomType', 'roomForm', 'room']);

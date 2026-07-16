@@ -232,7 +232,7 @@
             <div class="form-group" style="flex: 1.5">
               <label>Người bán</label>
               <select class="form-control" v-model="formSeller">
-                <option value="">Demo</option>
+                <option value="">-- Chọn nhân viên --</option>
                 <option
                   v-for="employee in bookingOptions.employees"
                   :key="employee.employee_code"
@@ -675,7 +675,7 @@ const fillFromData = (data) => {
   formConfirmedDate.value = fmt(data.confirmed_date)
   formPaymentMethod.value = data.payment_method_code || ''
   formReferenceCode.value = data.reference_code || ''
-  formSeller.value = data.seller || ''
+  formSeller.value = data.employee_code || ''
   formIsGit.value = Boolean(data.is_git)
   formIsVat.value = Boolean(data.is_vat)
   formNights.value = data.nights || 0
