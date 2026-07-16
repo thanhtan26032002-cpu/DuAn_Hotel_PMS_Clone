@@ -705,6 +705,16 @@ watch(
   },
 )
 
+// Also watch initialData itself in case it arrives async after modal opens
+watch(
+  () => props.initialData,
+  (newData) => {
+    if (props.isOpen && newData) {
+      fillFromData(newData)
+    }
+  },
+)
+
 const showColorPicker = ref(false)
 const selectedColor = ref('none')
 

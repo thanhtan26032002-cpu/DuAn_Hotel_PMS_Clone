@@ -513,16 +513,29 @@ const handleMouseMove = (event) => {
 
 const modalInitialData = ref(null)
 
-const openModalWithData = () => {
-  modalInitialData.value = bookingData.value
+const openModalWithData = async () => {
+  // Fetch fresh data from API before opening modal
+  const currentData = bookingData.value
+  if (!currentData || currentData.isNew) return
+
+  try {
+    const bookingCode = currentData.booking_code
+    const res = await fetch(`http://127.0.0.1:8000/api/bookings/${bookingCode}`)
+    const result = await res.json()
+    if (result.success) {
+      modalInitialData.value = result.data
+    } else {
+      modalInitialData.value = currentData
+    }
+  } catch {
+    modalInitialData.value = currentData
+  }
+
   showRegistrationInfoModal.value = true
 }
 
 const handleTabClick = (tab) => {
   activeTabId.value = tab.id
-  if (tab.id === 'initial' && bookingDataMap.value['initial']) {
-    openModalWithData()
-  }
 }
 
 const handleCreateModalClose = () => {
