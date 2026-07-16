@@ -1414,6 +1414,7 @@ const chiNhanhData = ref([
 ])
 
 // 5. Dữ liệu Tab Loại
+// eslint-disable-next-line no-unused-vars
 const loaiData = ref([
   { id: 1, ten: 'Trong Nước' },
   { id: 2, ten: 'Nước Ngoài' },
@@ -1424,6 +1425,7 @@ const loaiData = ref([
 ])
 
 // 6. Dữ liệu Tab Lĩnh Vực Hoạt Động (Dạng cây)
+// eslint-disable-next-line no-unused-vars
 const linhVucHoatDongData = ref([
   {
     ten: 'NÔNG NGHIỆP, LÂM NGHIỆP VÀ THUỶ SẢN',

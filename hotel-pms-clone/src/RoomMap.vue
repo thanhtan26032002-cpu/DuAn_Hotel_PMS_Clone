@@ -1405,25 +1405,26 @@ onBeforeUnmount(() => {
           @click.self="isOccupiedModalOpen = false"
         >
           <div class="arrivals-modal occupied-modal" @click.stop>
-            <div class="arrivals-modal-top-bar">
+            <div class="arrivals-modal-top-bar occupied-top-bar">
+              <div style="display: flex; align-items: center; padding-left: 16px;">
+                <span class="arrivals-panel-title" style="color: #ffffff; margin-right: 12px; font-size: 15px;">Danh sách phòng đang ở</span>
+                <span class="occupied-badge">{{ occupiedData.occupied_count }}</span>
+              </div>
               <button
                 type="button"
                 class="arrivals-modal-close"
                 @click="isOccupiedModalOpen = false"
+                style="color: #ffffff; right: 16px; top: 8px; font-size: 24px;"
               >
                 ×
               </button>
             </div>
-            <div class="arrivals-modal-body">
-              <div class="arrivals-panel">
-                <div class="arrivals-panel-header">
-                  <span class="arrivals-panel-title">Danh sách phòng đang ở</span>
-                  <span class="arrivals-count-badge">{{ occupiedData.occupied_count }}</span>
-                </div>
-                <div class="arrivals-table-wrap">
+            <div class="arrivals-modal-body" style="padding-top: 0;">
+              <div class="arrivals-panel" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+                <div class="arrivals-table-wrap" style="padding-top: 10px;">
                   <table class="arrivals-table">
                     <thead>
-                      <tr class="arrivals-table-head-cyan">
+                      <tr class="occupied-table-head">
                         <th>
                           <div style="display: flex; align-items: center; gap: 10px">
                             <div style="width: 16px; margin-right: 8px"></div>
@@ -2994,23 +2995,34 @@ onBeforeUnmount(() => {
 }
 
 /* Occupied modal specific styles */
-.occupied-modal .arrivals-panel-header {
-  justify-content: center;
+.occupied-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background: #5dc3e7;
-  border-bottom: none;
-  padding-bottom: 14px;
+  height: 50px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
-.occupied-modal .arrivals-panel-title {
-  color: #ffffff;
-  font-size: 15px;
-}
-.occupied-modal .arrivals-count-badge {
-  background: transparent;
-  color: #ffffff;
+.occupied-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   border: 1px solid #ffffff;
-}
-.occupied-modal .arrivals-modal-close {
   color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.occupied-table-head th {
+  background: #f8f9fa;
+  color: #1e293b;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
 }
 
 .arrivals-table thead th {
