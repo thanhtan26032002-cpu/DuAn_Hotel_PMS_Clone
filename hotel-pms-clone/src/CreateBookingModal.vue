@@ -68,18 +68,20 @@
             </div>
             <div class="form-group" style="flex: 2">
               <label>Tên đăng ký</label>
-              <div style="display: flex; gap: 8px; height: 100%;">
+              <div style="display: flex; gap: 8px; height: 100%">
                 <input type="text" class="form-control bg-yellow" style="flex: 1" />
-                <div style="position: relative; height: 100%;">
-                  <button 
-                    class="color-box" 
-                    :style="{ backgroundColor: selectedColor === 'none' ? '#63c2de' : selectedColor }"
+                <div style="position: relative; height: 100%">
+                  <button
+                    class="color-box"
+                    :style="{
+                      backgroundColor: selectedColor === 'none' ? '#63c2de' : selectedColor,
+                    }"
                     @click.stop="toggleColorPicker"
                   ></button>
                   <div class="color-picker-dropdown" v-if="showColorPicker" @click.stop>
                     <div class="color-option text-option" @click="selectColor('none')">none</div>
-                    <div 
-                      v-for="color in colors" 
+                    <div
+                      v-for="color in colors"
                       :key="color"
                       class="color-option"
                       :style="{ backgroundColor: color }"
@@ -127,7 +129,9 @@
               <div class="select-wrapper bg-yellow">
                 <div class="status-dot"></div>
                 <select class="form-control bg-yellow pl-24">
-                  <option>Guaranteed</option>
+                  <option v-for="status in bookingOptions.reservation_statuses" :key="status.id" :value="status.id">
+                    {{ status.name }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -164,7 +168,10 @@
               <label>CÔNG TY</label>
               <div class="input-with-icon bg-yellow">
                 <select class="form-control bg-yellow border-0">
-                  <option>Công ty</option>
+                  <option value="">Công ty</option>
+                  <option v-for="company in bookingOptions.companies" :key="company.company_code" :value="company.company_code">
+                    {{ company.name }}
+                  </option>
                 </select>
                 <button class="icon-btn-circle">+</button>
               </div>
@@ -172,7 +179,10 @@
             <div class="form-group" style="flex: 2.5">
               <label>Phương thức thanh toán</label>
               <select class="form-control">
-                <option>Phương thức thanh toán</option>
+                <option value="">Phương thức thanh toán</option>
+                <option v-for="pm in bookingOptions.payment_methods" :key="pm.payment_code" :value="pm.payment_code">
+                  {{ pm.payment_name }}
+                </option>
               </select>
             </div>
             <div class="form-group" style="flex: 1.5">
@@ -204,7 +214,10 @@
             <div class="form-group" style="flex: 1.5">
               <label>Người bán</label>
               <select class="form-control">
-                <option>Demo</option>
+                <option value="">Demo</option>
+                <option v-for="employee in bookingOptions.employees" :key="employee.employee_code" :value="employee.employee_code">
+                  {{ employee.fullname }}
+                </option>
               </select>
             </div>
           </div>
@@ -242,13 +255,19 @@
                   <div class="form-group">
                     <label>Thị trường</label>
                     <select class="form-control bg-yellow">
-                      <option>Online Travel A...</option>
+                      <option value="">Online Travel A...</option>
+                      <option v-for="segment in bookingOptions.market_segments" :key="segment.code" :value="segment.code">
+                        {{ segment.name }}
+                      </option>
                     </select>
                   </div>
                   <div class="form-group mt-3">
                     <label>Nguồn khách</label>
                     <select class="form-control bg-yellow">
-                      <option>Source code</option>
+                      <option value="">Source code</option>
+                      <option v-for="source in bookingOptions.booking_sources" :key="source.code" :value="source.code">
+                        {{ source.name }}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -259,7 +278,10 @@
                     <label>Người đặt phòng</label>
                     <div class="input-with-icon">
                       <select class="form-control border-0">
-                        <option>Người đặt phòng</option>
+                        <option value="">Người đặt phòng</option>
+                        <option v-for="booker in bookingOptions.bookers" :key="booker.id" :value="booker.id">
+                          {{ booker.name }}
+                        </option>
                       </select>
                       <button class="icon-btn text-blue bg-transparent">
                         <svg viewBox="0 0 24 24" width="16" height="16">
@@ -511,7 +533,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 // eslint-disable-next-line no-unused-vars
 const props = defineProps({
@@ -525,13 +547,52 @@ const emit = defineEmits(['close'])
 
 const currentTab = ref('general')
 
+const bookingOptions = ref({
+  reservation_statuses: [],
+  companies: [],
+  payment_methods: [],
+  employees: [],
+  market_segments: [],
+  booking_sources: [],
+  bookers: [],
+})
+
+const fetchOptions = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/booking-options')
+    if (response.ok) {
+      bookingOptions.value = await response.json()
+    }
+  } catch (error) {
+    console.error('Failed to fetch booking options', error)
+  }
+}
+
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal) {
+      selectedColor.value = 'none'
+      showColorPicker.value = false
+      currentTab.value = 'general'
+    }
+  }
+)
+
 const showColorPicker = ref(false)
 const selectedColor = ref('none')
 
 const colors = [
-  '#8d6e63', '#78909c', '#ba68c8', '#80cbc4',
-  '#aed581', '#bdbdbd', '#e57373', '#f06292', '#dce775',
-  '#ffb74d'
+  '#8d6e63',
+  '#78909c',
+  '#ba68c8',
+  '#80cbc4',
+  '#aed581',
+  '#bdbdbd',
+  '#e57373',
+  '#f06292',
+  '#dce775',
+  '#ffb74d',
 ]
 
 const toggleColorPicker = () => {
@@ -548,6 +609,7 @@ const closeColorPicker = () => {
 }
 
 onMounted(() => {
+  fetchOptions()
   document.addEventListener('click', closeColorPicker)
 })
 
@@ -624,13 +686,12 @@ const closeModal = () => {
 }
 
 .top-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   align-items: center;
   z-index: 10;
+  margin-bottom: 10px;
 }
 
 .toggle-switch {
@@ -815,7 +876,7 @@ const closeModal = () => {
   display: grid;
   grid-template-columns: repeat(5, auto);
   gap: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 100;
   justify-items: center;
   align-items: center;
