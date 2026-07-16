@@ -68,9 +68,25 @@
             </div>
             <div class="form-group" style="flex: 2">
               <label>Tên đăng ký</label>
-              <div class="input-with-icon">
-                <input type="text" class="form-control bg-yellow" />
-                <button class="icon-btn bg-light-blue"></button>
+              <div style="display: flex; gap: 8px; height: 100%;">
+                <input type="text" class="form-control bg-yellow" style="flex: 1" />
+                <div style="position: relative; height: 100%;">
+                  <button 
+                    class="color-box" 
+                    :style="{ backgroundColor: selectedColor === 'none' ? '#63c2de' : selectedColor }"
+                    @click.stop="toggleColorPicker"
+                  ></button>
+                  <div class="color-picker-dropdown" v-if="showColorPicker" @click.stop>
+                    <div class="color-option text-option" @click="selectColor('none')">none</div>
+                    <div 
+                      v-for="color in colors" 
+                      :key="color"
+                      class="color-option"
+                      :style="{ backgroundColor: color }"
+                      @click="selectColor(color)"
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="form-group" style="flex: 2">
@@ -495,8 +511,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
+// eslint-disable-next-line no-unused-vars
 const props = defineProps({
   isOpen: {
     type: Boolean,
@@ -507,6 +524,36 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const currentTab = ref('general')
+
+const showColorPicker = ref(false)
+const selectedColor = ref('none')
+
+const colors = [
+  '#8d6e63', '#78909c', '#ba68c8', '#80cbc4',
+  '#aed581', '#bdbdbd', '#e57373', '#f06292', '#dce775',
+  '#ffb74d'
+]
+
+const toggleColorPicker = () => {
+  showColorPicker.value = !showColorPicker.value
+}
+
+const selectColor = (color) => {
+  selectedColor.value = color
+  showColorPicker.value = false
+}
+
+const closeColorPicker = () => {
+  showColorPicker.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeColorPicker)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeColorPicker)
+})
 
 const closeModal = () => {
   emit('close')
@@ -747,6 +794,44 @@ const closeModal = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+.color-box {
+  width: 28px;
+  height: 100%;
+  min-height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #63c2de;
+}
+.color-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
+  justify-items: center;
+  align-items: center;
+}
+.color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.text-option {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  font-size: 13px;
+  color: #333;
 }
 .input-with-icon .icon-btn-circle {
   width: 20px;
