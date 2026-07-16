@@ -3,7 +3,7 @@
     <div class="reg-header-bar">
       <div class="header-title">
         <span class="title-text">Booking {{ bookingCode }}</span>
-        <a class="btn-add-booking">
+        <a class="btn-add-booking" @click="showCreateBookingModal = true">
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path
               d="M12 5v14M5 12h14"
@@ -404,11 +404,15 @@
         </tfoot>
       </table>
     </div>
+    <CreateBookingModal :isOpen="showCreateBookingModal" @close="showCreateBookingModal = false" />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
+import CreateBookingModal from './CreateBookingModal.vue'
+
+const showCreateBookingModal = ref(false)
 
 const props = defineProps({
   bookingCode: {
