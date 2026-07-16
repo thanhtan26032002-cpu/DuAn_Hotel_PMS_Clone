@@ -15,7 +15,7 @@ class OptionsController extends Controller
         $employees = DB::table('employees')->select('employee_code', 'fullname')->get();
         $marketSegments = DB::table('market_segments')->select('code', 'name')->get();
         $bookingSources = DB::table('booking_sources')->select('code', 'name')->get();
-        $bookers = DB::table('bookers')->select('id', 'name')->get();
+        $bookers = DB::table('bookers')->select('id', 'name', 'phone', 'email', 'address', 'notes')->get();
 
         return response()->json([
             'reservation_statuses' => $reservationStatuses,

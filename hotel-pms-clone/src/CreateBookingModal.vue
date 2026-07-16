@@ -129,7 +129,11 @@
               <div class="select-wrapper bg-yellow">
                 <div class="status-dot"></div>
                 <select class="form-control bg-yellow pl-24">
-                  <option v-for="status in bookingOptions.reservation_statuses" :key="status.id" :value="status.id">
+                  <option
+                    v-for="status in bookingOptions.reservation_statuses"
+                    :key="status.id"
+                    :value="status.id"
+                  >
                     {{ status.name }}
                   </option>
                 </select>
@@ -169,7 +173,11 @@
               <div class="input-with-icon bg-yellow">
                 <select class="form-control bg-yellow border-0">
                   <option value="">Công ty</option>
-                  <option v-for="company in bookingOptions.companies" :key="company.company_code" :value="company.company_code">
+                  <option
+                    v-for="company in bookingOptions.companies"
+                    :key="company.company_code"
+                    :value="company.company_code"
+                  >
                     {{ company.name }}
                   </option>
                 </select>
@@ -180,7 +188,11 @@
               <label>Phương thức thanh toán</label>
               <select class="form-control">
                 <option value="">Phương thức thanh toán</option>
-                <option v-for="pm in bookingOptions.payment_methods" :key="pm.payment_code" :value="pm.payment_code">
+                <option
+                  v-for="pm in bookingOptions.payment_methods"
+                  :key="pm.payment_code"
+                  :value="pm.payment_code"
+                >
                   {{ pm.payment_name }}
                 </option>
               </select>
@@ -215,7 +227,11 @@
               <label>Người bán</label>
               <select class="form-control">
                 <option value="">Demo</option>
-                <option v-for="employee in bookingOptions.employees" :key="employee.employee_code" :value="employee.employee_code">
+                <option
+                  v-for="employee in bookingOptions.employees"
+                  :key="employee.employee_code"
+                  :value="employee.employee_code"
+                >
                   {{ employee.fullname }}
                 </option>
               </select>
@@ -256,7 +272,11 @@
                     <label>Thị trường</label>
                     <select class="form-control bg-yellow">
                       <option value="">Online Travel A...</option>
-                      <option v-for="segment in bookingOptions.market_segments" :key="segment.code" :value="segment.code">
+                      <option
+                        v-for="segment in bookingOptions.market_segments"
+                        :key="segment.code"
+                        :value="segment.code"
+                      >
                         {{ segment.name }}
                       </option>
                     </select>
@@ -265,7 +285,11 @@
                     <label>Nguồn khách</label>
                     <select class="form-control bg-yellow">
                       <option value="">Source code</option>
-                      <option v-for="source in bookingOptions.booking_sources" :key="source.code" :value="source.code">
+                      <option
+                        v-for="source in bookingOptions.booking_sources"
+                        :key="source.code"
+                        :value="source.code"
+                      >
                         {{ source.name }}
                       </option>
                     </select>
@@ -277,9 +301,13 @@
                   <div class="form-group">
                     <label>Người đặt phòng</label>
                     <div class="input-with-icon">
-                      <select class="form-control border-0">
+                      <select class="form-control border-0" v-model="selectedBookerId">
                         <option value="">Người đặt phòng</option>
-                        <option v-for="booker in bookingOptions.bookers" :key="booker.id" :value="booker.id">
+                        <option
+                          v-for="booker in bookingOptions.bookers"
+                          :key="booker.id"
+                          :value="booker.id"
+                        >
                           {{ booker.name }}
                         </option>
                       </select>
@@ -300,18 +328,18 @@
                   <div class="flex-row gap-3 mt-3">
                     <div class="form-group flex-1">
                       <label>Liên hệ</label>
-                      <input type="text" class="form-control" placeholder="Liên hệ" />
+                      <input type="text" class="form-control" placeholder="Liên hệ" v-model="contactPhone" />
                     </div>
                     <div class="form-group flex-1">
                       <label>Email</label>
-                      <input type="text" class="form-control" placeholder="Email" />
+                      <input type="text" class="form-control" placeholder="Email" v-model="contactEmail" />
                     </div>
                   </div>
                 </div>
 
                 <div class="form-group" style="grid-column: 3">
                   <label>Ghi chú</label>
-                  <textarea class="form-control textarea" placeholder="Ghi chú"></textarea>
+                  <textarea class="form-control textarea" placeholder="Ghi chú" v-model="bookingNotes"></textarea>
                 </div>
 
                 <div class="form-group" style="grid-column: 4">
@@ -535,7 +563,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 
-// eslint-disable-next-line no-unused-vars
 const props = defineProps({
   isOpen: {
     type: Boolean,
@@ -575,12 +602,35 @@ watch(
       selectedColor.value = 'none'
       showColorPicker.value = false
       currentTab.value = 'general'
+      
+      selectedBookerId.value = ''
+      contactPhone.value = ''
+      contactEmail.value = ''
+      bookingNotes.value = ''
     }
-  }
+  },
 )
 
 const showColorPicker = ref(false)
 const selectedColor = ref('none')
+
+const selectedBookerId = ref('')
+const contactPhone = ref('')
+const contactEmail = ref('')
+const bookingNotes = ref('')
+
+watch(selectedBookerId, (newId) => {
+  const booker = bookingOptions.value.bookers.find(b => String(b.id) === String(newId))
+  if (booker) {
+    contactPhone.value = booker.phone || ''
+    contactEmail.value = booker.email || ''
+    bookingNotes.value = booker.notes || ''
+  } else {
+    contactPhone.value = ''
+    contactEmail.value = ''
+    bookingNotes.value = ''
+  }
+})
 
 const colors = [
   '#8d6e63',
