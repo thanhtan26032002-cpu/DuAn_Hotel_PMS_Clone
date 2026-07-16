@@ -16,12 +16,12 @@
           <div class="top-actions">
             <label class="toggle-switch">
               <span class="toggle-label">GIT</span>
-              <input type="checkbox" />
+              <input type="checkbox" v-model="formIsGit" />
               <span class="slider"></span>
             </label>
             <label class="toggle-switch">
               <span class="toggle-label">VAT</span>
-              <input type="checkbox" />
+              <input type="checkbox" v-model="formIsVat" />
               <span class="slider"></span>
             </label>
             <button class="btn-icon bg-light-blue">
@@ -64,12 +64,17 @@
           <div class="form-row">
             <div class="form-group" style="flex: 1">
               <label>Mã đăng ký</label>
-              <input type="text" class="form-control bg-gray" disabled />
+              <input type="text" class="form-control bg-gray" disabled :value="formBookingCode" />
             </div>
             <div class="form-group" style="flex: 2">
               <label>Tên đăng ký</label>
               <div style="display: flex; gap: 8px; height: 100%">
-                <input type="text" class="form-control bg-yellow" style="flex: 1" />
+                <input
+                  type="text"
+                  class="form-control bg-yellow"
+                  style="flex: 1"
+                  v-model="formGuestName"
+                />
                 <div style="position: relative; height: 100%">
                   <button
                     class="color-box"
@@ -94,9 +99,9 @@
             <div class="form-group" style="flex: 2">
               <label>Ngày đến - Ngày đi</label>
               <div class="date-range-input">
-                <input type="text" class="form-control text-center" value="09/07/2026" />
+                <input type="text" class="form-control text-center" v-model="formCheckIn" />
                 <span>~</span>
-                <input type="text" class="form-control text-center" value="11/07/2026" />
+                <input type="text" class="form-control text-center" v-model="formCheckOut" />
                 <svg viewBox="0 0 24 24" class="icon-calendar">
                   <path
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
@@ -112,7 +117,7 @@
             <div class="form-group" style="flex: 1">
               <label>Đêm</label>
               <div class="input-with-icon bg-yellow">
-                <input type="number" class="form-control bg-yellow" value="2" />
+                <input type="number" class="form-control bg-yellow" v-model="formNights" />
                 <svg viewBox="0 0 24 24" class="icon-moon">
                   <path
                     d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
@@ -128,7 +133,8 @@
               <label>Trạng thái</label>
               <div class="select-wrapper bg-yellow">
                 <div class="status-dot"></div>
-                <select class="form-control bg-yellow pl-24">
+                <select class="form-control bg-yellow pl-24" v-model="formStatusId">
+                  <option value="">-- Chọn trạng thái --</option>
                   <option
                     v-for="status in bookingOptions.reservation_statuses"
                     :key="status.id"
@@ -142,7 +148,7 @@
             <div class="form-group" style="flex: 1.5">
               <label>Xác nhận</label>
               <div class="input-with-icon">
-                <input type="text" class="form-control" value="09/07/2026" />
+                <input type="text" class="form-control" v-model="formConfirmedDate" />
                 <svg viewBox="0 0 24 24" class="icon-calendar ml-1">
                   <path
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
@@ -171,7 +177,7 @@
             <div class="form-group" style="flex: 3">
               <label>CÔNG TY</label>
               <div class="input-with-icon bg-yellow">
-                <select class="form-control bg-yellow border-0">
+                <select class="form-control bg-yellow border-0" v-model="formCompanyCode">
                   <option value="">Công ty</option>
                   <option
                     v-for="company in bookingOptions.companies"
@@ -186,7 +192,7 @@
             </div>
             <div class="form-group" style="flex: 2.5">
               <label>Phương thức thanh toán</label>
-              <select class="form-control">
+              <select class="form-control" v-model="formPaymentMethod">
                 <option value="">Phương thức thanh toán</option>
                 <option
                   v-for="pm in bookingOptions.payment_methods"
@@ -199,12 +205,12 @@
             </div>
             <div class="form-group" style="flex: 1.5">
               <label>Mã tham chiếu</label>
-              <input type="text" class="form-control" placeholder="Mã tham chiếu" />
+              <input type="text" class="form-control" placeholder="Mã tham chiếu" v-model="formReferenceCode" />
             </div>
             <div class="form-group" style="flex: 1.5">
               <label>Đặt cọc</label>
               <div class="input-with-icon bg-gray-light">
-                <input type="text" class="form-control bg-transparent" value="0" />
+                <input type="text" class="form-control bg-transparent" v-model="formDeposit" />
                 <button class="icon-btn bg-blue-gray">
                   <svg
                     viewBox="0 0 24 24"
@@ -225,7 +231,7 @@
             </div>
             <div class="form-group" style="flex: 1.5">
               <label>Người bán</label>
-              <select class="form-control">
+              <select class="form-control" v-model="formSeller">
                 <option value="">Demo</option>
                 <option
                   v-for="employee in bookingOptions.employees"
@@ -270,7 +276,7 @@
                   <legend>Đối tượng</legend>
                   <div class="form-group">
                     <label>Thị trường</label>
-                    <select class="form-control bg-yellow">
+                    <select class="form-control bg-yellow" v-model="formMarketSegment">
                       <option value="">Online Travel A...</option>
                       <option
                         v-for="segment in bookingOptions.market_segments"
@@ -283,7 +289,7 @@
                   </div>
                   <div class="form-group mt-3">
                     <label>Nguồn khách</label>
-                    <select class="form-control bg-yellow">
+                    <select class="form-control bg-yellow" v-model="formBookingSource">
                       <option value="">Source code</option>
                       <option
                         v-for="source in bookingOptions.booking_sources"
@@ -328,18 +334,32 @@
                   <div class="flex-row gap-3 mt-3">
                     <div class="form-group flex-1">
                       <label>Liên hệ</label>
-                      <input type="text" class="form-control" placeholder="Liên hệ" v-model="contactPhone" />
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Liên hệ"
+                        v-model="contactPhone"
+                      />
                     </div>
                     <div class="form-group flex-1">
                       <label>Email</label>
-                      <input type="text" class="form-control" placeholder="Email" v-model="contactEmail" />
+                      <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Email"
+                        v-model="contactEmail"
+                      />
                     </div>
                   </div>
                 </div>
 
                 <div class="form-group" style="grid-column: 3">
                   <label>Ghi chú</label>
-                  <textarea class="form-control textarea" placeholder="Ghi chú" v-model="bookingNotes"></textarea>
+                  <textarea
+                    class="form-control textarea"
+                    placeholder="Ghi chú"
+                    v-model="bookingNotes"
+                  ></textarea>
                 </div>
 
                 <div class="form-group" style="grid-column: 4">
@@ -568,6 +588,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  initialData: {
+    type: Object,
+    default: null,
+  },
 })
 
 const emit = defineEmits(['close'])
@@ -595,6 +619,76 @@ const fetchOptions = async () => {
   }
 }
 
+const formBookingCode = ref('')
+const formGuestName = ref('')
+const formCheckIn = ref('')
+const formCheckOut = ref('')
+const formStatusId = ref('')
+const formCompanyCode = ref('')
+const formDeposit = ref('0')
+const formMarketSegment = ref('')
+const formBookingSource = ref('')
+const formConfirmedDate = ref('')
+const formPaymentMethod = ref('')
+const formReferenceCode = ref('')
+const formSeller = ref('')
+const formIsGit = ref(false)
+const formIsVat = ref(false)
+const formNights = ref(0)
+
+const fillFromData = (data) => {
+  if (!data || data.isNew) {
+    formBookingCode.value = ''
+    formGuestName.value = ''
+    formCheckIn.value = ''
+    formCheckOut.value = ''
+    formStatusId.value = ''
+    formCompanyCode.value = ''
+    formDeposit.value = '0'
+    formMarketSegment.value = ''
+    formBookingSource.value = ''
+    formConfirmedDate.value = ''
+    formPaymentMethod.value = ''
+    formReferenceCode.value = ''
+    formSeller.value = ''
+    formIsGit.value = false
+    formIsVat.value = false
+    formNights.value = 0
+    selectedBookerId.value = ''
+    bookingNotes.value = ''
+    return
+  }
+  formBookingCode.value = data.booking_code || ''
+  formGuestName.value = data.guest_name || ''
+  const fmt = (d) => {
+    if (!d) return ''
+    const dt = new Date(d)
+    return `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`
+  }
+  formCheckIn.value = fmt(data.check_in)
+  formCheckOut.value = fmt(data.check_out)
+  formStatusId.value = data.status?.id || ''
+  formCompanyCode.value = data.company?.company_code || ''
+  formDeposit.value = data.deposit || '0'
+  formMarketSegment.value = data.market_segment_code || ''
+  formBookingSource.value = data.booking_source_code || ''
+  formConfirmedDate.value = fmt(data.confirmed_date)
+  formPaymentMethod.value = data.payment_method_code || ''
+  formReferenceCode.value = data.reference_code || ''
+  formSeller.value = data.seller || ''
+  formIsGit.value = Boolean(data.is_git)
+  formIsVat.value = Boolean(data.is_vat)
+  formNights.value = data.nights || 0
+  selectedBookerId.value = data.booker_id || ''
+  
+  // Update notes after the watcher handles booker selection
+  setTimeout(() => {
+    if (data.notes !== null && data.notes !== undefined) {
+      bookingNotes.value = data.notes
+    }
+  }, 10)
+}
+
 watch(
   () => props.isOpen,
   (newVal) => {
@@ -602,11 +696,11 @@ watch(
       selectedColor.value = 'none'
       showColorPicker.value = false
       currentTab.value = 'general'
-      
       selectedBookerId.value = ''
       contactPhone.value = ''
       contactEmail.value = ''
       bookingNotes.value = ''
+      fillFromData(props.initialData)
     }
   },
 )
@@ -620,7 +714,7 @@ const contactEmail = ref('')
 const bookingNotes = ref('')
 
 watch(selectedBookerId, (newId) => {
-  const booker = bookingOptions.value.bookers.find(b => String(b.id) === String(newId))
+  const booker = bookingOptions.value.bookers.find((b) => String(b.id) === String(newId))
   if (booker) {
     contactPhone.value = booker.phone || ''
     contactEmail.value = booker.email || ''

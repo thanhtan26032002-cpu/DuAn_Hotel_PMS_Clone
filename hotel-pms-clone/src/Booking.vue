@@ -1,8 +1,36 @@
 <template>
   <div class="registration-wrapper">
     <div class="reg-header-bar">
-      <div class="header-title">
-        <span class="title-text">Booking {{ bookingCode }}</span>
+      <div class="tabs-container">
+        <div
+          v-for="tab in bookingTabs"
+          :key="tab.id"
+          :class="['booking-tab', { active: activeTabId === tab.id }]"
+          style="position: relative"
+          @click="handleTabClick(tab)"
+          @mouseenter="hoveredTabId = tab.id"
+          @mouseleave="hoveredTabId = null"
+        >
+          <span class="tab-title">{{ tab.title }}</span>
+          <button
+            v-if="bookingTabs.length > 1"
+            class="btn-close-tab"
+            @click.stop="removeTab(tab.id)"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
         <a class="btn-add-booking" @click="showCreateBookingModal = true">
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path
@@ -141,34 +169,58 @@
       </div>
     </div>
 
-    <div class="reg-meta-info" v-if="bookingData">
-      <span class="meta-item"
-        >Tên đăng ký: <strong>{{ bookingData.guest_name }}</strong></span
-      >
-      <span class="meta-item"
-        >Trạng thái:
-        <strong :style="{ color: bookingData.booking_color || '#16a34a' }">
-          {{ bookingData.status?.status_name || 'N/A' }}
-        </strong>
-      </span>
-      <span class="meta-item"
-        >Ngày đến: <strong>{{ formatDate(bookingData.check_in) }}</strong></span
-      >
-      <span class="meta-item"
-        >Ngày đi: <strong>{{ formatDate(bookingData.check_out) }}</strong></span
-      >
-      <span class="meta-item"
-        >Đặt cọc: <strong>{{ formatCurrency(bookingData.deposit) }}</strong></span
-      >
-      <span class="meta-item"
-        >Công ty: <strong>{{ bookingData.company?.name || 'N/A' }}</strong></span
-      >
-      <span class="meta-item"
-        >Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span
-      >
-    </div>
-    <div class="reg-meta-info" v-else>
-      <span>Đang tải dữ liệu...</span>
+    <div
+      class="reg-meta-info-wrapper"
+      @mouseenter="metaHovered = true"
+      @mouseleave="metaHovered = false"
+    >
+      <div class="reg-meta-info" v-if="bookingData && !bookingData.isNew">
+        <span class="meta-item"
+          >Tên đăng ký: <strong>{{ bookingData.guest_name }}</strong></span
+        >
+        <span class="meta-item"
+          >Trạng thái:
+          <strong :style="{ color: bookingData.booking_color || '#16a34a' }">
+            {{ bookingData.status?.status_name || 'N/A' }}
+          </strong>
+        </span>
+        <span class="meta-item"
+          >Ngày đến: <strong>{{ formatDate(bookingData.check_in) }}</strong></span
+        >
+        <span class="meta-item"
+          >Ngày đi: <strong>{{ formatDate(bookingData.check_out) }}</strong></span
+        >
+        <span class="meta-item"
+          >Đặt cọc: <strong>{{ formatCurrency(bookingData.deposit) }}</strong></span
+        >
+        <span class="meta-item"
+          >Công ty: <strong>{{ bookingData.company?.name || '' }}</strong></span
+        >
+        <span class="meta-item"
+          >Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span
+        >
+        <button v-if="metaHovered" class="btn-xem-chi-tiet" @click="openModalWithData">
+          Xem chi tiết
+        </button>
+      </div>
+      <div class="reg-meta-info" v-else-if="bookingData && bookingData.isNew">
+        <span class="meta-item">Tên đăng ký: <strong></strong></span>
+        <span class="meta-item">Trạng thái: <strong></strong></span>
+        <span class="meta-item"
+          >Ngày đến: <strong>{{ formatDate(bookingData.check_in) }}</strong></span
+        >
+        <span class="meta-item"
+          >Ngày đi: <strong>{{ formatDate(bookingData.check_out) }}</strong></span
+        >
+        <span class="meta-item">Đặt cọc: <strong>0</strong></span>
+        <span class="meta-item">Công ty: <strong></strong></span>
+        <span class="meta-item"
+          >Xác nhận: <strong>{{ formatDate(bookingData.confirmed_date) }}</strong></span
+        >
+      </div>
+      <div class="reg-meta-info" v-else>
+        <span>Đang tải dữ liệu...</span>
+      </div>
     </div>
 
     <div class="table-toolbar">
@@ -384,6 +436,11 @@
               </template>
             </template>
           </template>
+          <tr v-else-if="bookingData?.isNew">
+            <td colspan="31" class="no-rooms-container">
+              <div class="no-rooms-box">No Rooms</div>
+            </td>
+          </tr>
           <tr v-else>
             <td colspan="31" class="text-center">Không có dữ liệu phòng</td>
           </tr>
@@ -404,7 +461,11 @@
         </tfoot>
       </table>
     </div>
-    <CreateBookingModal :isOpen="showCreateBookingModal" @close="showCreateBookingModal = false" />
+    <CreateBookingModal
+      :isOpen="showCreateBookingModal"
+      :initialData="modalInitialData"
+      @close="handleModalClose"
+    />
   </div>
 </template>
 
@@ -421,14 +482,77 @@ const props = defineProps({
   },
 })
 
-const bookingData = ref(null)
+const bookingTabs = ref([
+  {
+    id: 'initial',
+    title: props.bookingCode === 'GAL1' ? 'Booking GAL6124' : `Booking ${props.bookingCode}`,
+  },
+])
+const activeTabId = ref('initial')
+const hoveredTabId = ref(null)
+
+const metaHovered = ref(false)
+const modalInitialData = ref(null)
+
+const openModalWithData = () => {
+  modalInitialData.value = bookingData.value
+  showCreateBookingModal.value = true
+}
+
+const handleTabClick = (tab) => {
+  activeTabId.value = tab.id
+  if (tab.id === 'initial' && bookingDataMap.value['initial']) {
+    openModalWithData()
+  }
+}
+
+const handleModalClose = () => {
+  showCreateBookingModal.value = false
+  const newId = `NEW_${Date.now()}`
+  bookingTabs.value.push({ id: newId, title: 'New Booking' })
+  activeTabId.value = newId
+}
+
+const removeTab = (id) => {
+  if (bookingTabs.value.length > 1) {
+    const index = bookingTabs.value.findIndex((t) => t.id === id)
+    if (index !== -1) {
+      bookingTabs.value.splice(index, 1)
+      if (activeTabId.value === id) {
+        activeTabId.value = bookingTabs.value[0].id
+      }
+    }
+  }
+}
+
+const bookingDataMap = ref({})
+
+const bookingData = computed(() => {
+  if (activeTabId.value === 'initial') {
+    return bookingDataMap.value['initial'] || null
+  }
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return {
+    isNew: true,
+    guest_name: '',
+    status: { status_name: '' },
+    booking_color: 'inherit',
+    check_in: today,
+    check_out: today,
+    deposit: 0,
+    company: { name: '' },
+    confirmed_date: today,
+    booking_rooms: [],
+  }
+})
 
 const fetchBookingData = async () => {
   try {
     const res = await fetch(`http://127.0.0.1:8000/api/bookings/${props.bookingCode}`)
     const result = await res.json()
     if (result.success) {
-      bookingData.value = result.data
+      bookingDataMap.value['initial'] = result.data
     }
   } catch (error) {
     console.error('Lỗi khi fetch booking:', error)
@@ -555,19 +679,76 @@ onMounted(() => {
   background-color: #e9ecef;
   border-bottom: 1px solid #ddd;
 }
-.header-title {
+.tabs-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
-.title-text {
-  font-size: 15px;
-  font-weight: bold;
+.booking-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 20px;
   color: #5bc0de;
-  border: 1px solid white;
-  border-radius: 10px;
+  font-weight: 500;
+  font-size: 14px;
+}
+.booking-tab.active {
   background-color: white;
-  padding: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.btn-close-tab {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #5bc0de;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+.btn-close-tab:hover {
+  opacity: 1;
+  color: #ff4d4f;
+}
+.no-rooms-container {
+  padding: 10px;
+}
+.no-rooms-box {
+  background-color: #e9ecef;
+  color: #6c757d;
+  font-weight: bold;
+  font-size: 16px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.reg-meta-info-wrapper {
+  position: relative;
+}
+.btn-xem-chi-tiet {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #5bc0de;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-xem-chi-tiet:hover {
+  background-color: #31b0d5;
 }
 .btn-add-booking {
   background: transparent;
@@ -583,15 +764,48 @@ onMounted(() => {
   align-items: center;
 }
 .btn-action {
-  padding: 5px 10px;
-  border: none;
+  background: transparent;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  color: #fff;
+  padding: 4px 8px;
   cursor: pointer;
-  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  color: #333;
+}
+.tab-hover-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background-color: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+.tab-hover-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 4px 4px 4px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+}
+.tab-tooltip-enter-active,
+.tab-tooltip-leave-active {
+  transition: opacity 0.2s;
+}
+.tab-tooltip-enter-from,
+.tab-tooltip-leave-to {
+  opacity: 0;
 }
 .icon-svg {
   width: 14px;
