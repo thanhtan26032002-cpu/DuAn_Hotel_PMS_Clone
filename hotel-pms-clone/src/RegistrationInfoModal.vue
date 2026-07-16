@@ -463,10 +463,10 @@
                   </thead>
                   <tbody>
                     <tr
-                      v-for="type in ['SUPD', 'SUPT', 'SUPTR', 'DLXD', 'DLXT', 'DLXDB', 'DLXTB']"
-                      :key="type"
+                      v-for="rt in bookingOptions.room_types"
+                      :key="rt.id"
                     >
-                      <td>{{ type }}</td>
+                      <td>{{ rt.type_short_name }}</td>
                       <td>
                         <div class="date-range-small">
                           09 / 07 / 2026 ~ 11 / 07 / 2026
@@ -482,23 +482,23 @@
                           </svg>
                         </div>
                       </td>
-                      <td>0</td>
-                      <td>{{ type === 'DLXTB' ? 2 : 0 }}</td>
+                      <td>{{ roomData[rt.id]?.occupied || 0 }}</td>
+                      <td>{{ roomData[rt.id]?.available || 0 }}</td>
                       <td>
                         <div class="number-input-group">
-                          <input type="number" value="0" />
+                          <input type="number" v-model="roomData[rt.id].quantity" />
                           <div class="spinners">
-                            <button class="spinner-up">▲</button>
-                            <button class="spinner-down">▼</button>
+                            <button class="spinner-up" @click.prevent="updateRoomData(rt.id, 'quantity', 1)">▲</button>
+                            <button class="spinner-down" @click.prevent="updateRoomData(rt.id, 'quantity', -1)">▼</button>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div class="number-input-group" style="width: 80px">
-                          <input type="number" value="0" />
+                          <input type="number" v-model="roomData[rt.id].price" />
                           <div class="spinners">
-                            <button class="spinner-up">▲</button>
-                            <button class="spinner-down">▼</button>
+                            <button class="spinner-up" @click.prevent="updateRoomData(rt.id, 'price', 10000)">▲</button>
+                            <button class="spinner-down" @click.prevent="updateRoomData(rt.id, 'price', -10000)">▼</button>
                           </div>
                         </div>
                       </td>
@@ -511,31 +511,28 @@
                       </td>
                       <td>
                         <div class="number-input-group">
-                          <input
-                            type="number"
-                            :value="type === 'SUPTR' ? 3 : type === 'DLXDB' ? 4 : 2"
-                          />
+                          <input type="number" v-model="roomData[rt.id].adults" />
                           <div class="spinners">
-                            <button class="spinner-up">▲</button>
-                            <button class="spinner-down">▼</button>
+                            <button class="spinner-up" @click.prevent="updateRoomData(rt.id, 'adults', 1)">▲</button>
+                            <button class="spinner-down" @click.prevent="updateRoomData(rt.id, 'adults', -1)">▼</button>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div class="number-input-group">
-                          <input type="number" value="0" />
+                          <input type="number" v-model="roomData[rt.id].infants" />
                           <div class="spinners">
-                            <button class="spinner-up">▲</button>
-                            <button class="spinner-down">▼</button>
+                            <button class="spinner-up" @click.prevent="updateRoomData(rt.id, 'infants', 1)">▲</button>
+                            <button class="spinner-down" @click.prevent="updateRoomData(rt.id, 'infants', -1)">▼</button>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div class="number-input-group">
-                          <input type="number" value="0" />
+                          <input type="number" v-model="roomData[rt.id].children" />
                           <div class="spinners">
-                            <button class="spinner-up">▲</button>
-                            <button class="spinner-down">▼</button>
+                            <button class="spinner-up" @click.prevent="updateRoomData(rt.id, 'children', 1)">▲</button>
+                            <button class="spinner-down" @click.prevent="updateRoomData(rt.id, 'children', -1)">▼</button>
                           </div>
                         </div>
                       </td>
@@ -544,14 +541,16 @@
                         <input type="checkbox" checked class="checkbox-custom" />
                       </td>
                     </tr>
-                    <!-- Footer row -->
+                    <!-- Footer summary row -->
                     <tr class="footer-row-data">
-                      <td colspan="2" class="text-left text-bold">2</td>
-                      <td class="text-bold">0</td>
-                      <td colspan="6"></td>
-                      <td class="text-bold">21</td>
-                      <td class="text-bold">0</td>
-                      <td class="text-bold">0</td>
+                      <td colspan="2" class="text-left text-bold">Tổng: {{ bookingOptions.room_types.length }}</td>
+                      <td class="text-bold">{{ totalOccupied }}</td>
+                      <td class="text-bold">{{ totalAvailable }}</td>
+                      <td class="text-bold">{{ totalQuantity }}</td>
+                      <td colspan="4"></td>
+                      <td class="text-bold">{{ totalAdults }}</td>
+                      <td class="text-bold">{{ totalInfants }}</td>
+                      <td class="text-bold">{{ totalChildren }}</td>
                       <td colspan="2"></td>
                     </tr>
                   </tbody>
@@ -581,7 +580,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 
 const props = defineProps({
   isOpen: {
@@ -606,7 +605,50 @@ const bookingOptions = ref({
   market_segments: [],
   booking_sources: [],
   bookers: [],
+  room_types: [],
 })
+
+const roomData = ref({})
+
+watch(
+  () => bookingOptions.value.room_types,
+  (types) => {
+    types.forEach((rt) => {
+      if (!roomData.value[rt.id]) {
+        let defaultAdults = 2
+        if (rt.type_short_name === 'SUPTR') defaultAdults = 3
+        if (rt.type_short_name === 'DLXDB' || rt.type_short_name === 'FAM') defaultAdults = 4
+
+        roomData.value[rt.id] = {
+          occupied: 0,
+          available: rt.type_short_name === 'DLXTB' ? 2 : 0,
+          quantity: 0,
+          price: 0,
+          adults: defaultAdults,
+          infants: 0,
+          children: 0,
+        }
+      }
+    })
+  },
+  { immediate: true, deep: true }
+)
+
+const updateRoomData = (id, field, delta) => {
+  if (roomData.value[id]) {
+    const current = roomData.value[id][field]
+    if (current + delta >= 0) {
+      roomData.value[id][field] = current + delta
+    }
+  }
+}
+
+const totalOccupied = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.occupied, 0))
+const totalAvailable = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.available, 0))
+const totalQuantity = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.quantity, 0))
+const totalAdults = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.adults, 0))
+const totalInfants = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.infants, 0))
+const totalChildren = computed(() => Object.values(roomData.value).reduce((sum, item) => sum + item.children, 0))
 
 const fetchOptions = async () => {
   try {

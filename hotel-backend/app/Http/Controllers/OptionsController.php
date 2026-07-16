@@ -16,6 +16,7 @@ class OptionsController extends Controller
         $marketSegments = DB::table('market_segments')->select('code', 'name')->get();
         $bookingSources = DB::table('booking_sources')->select('code', 'name')->get();
         $bookers = DB::table('bookers')->select('id', 'name', 'phone', 'email', 'address', 'notes')->get();
+        $roomTypes = DB::table('room_types')->select('id', 'type_name', 'type_short_name')->where('is_active', 1)->orderBy('id')->get();
 
         return response()->json([
             'reservation_statuses' => $reservationStatuses,
@@ -25,6 +26,7 @@ class OptionsController extends Controller
             'market_segments' => $marketSegments,
             'booking_sources' => $bookingSources,
             'bookers' => $bookers,
+            'room_types' => $roomTypes,
         ]);
     }
 }
