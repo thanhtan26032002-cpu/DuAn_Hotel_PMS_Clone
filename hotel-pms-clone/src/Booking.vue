@@ -513,10 +513,18 @@ const handleMouseMove = (event) => {
 
 const modalInitialData = ref(null)
 
+const editingNewTabId = ref(null)
+
 const openModalWithData = async () => {
   // Fetch fresh data from API before opening modal
   const currentData = bookingData.value
-  if (!currentData || currentData.isNew) return
+  if (!currentData) return
+
+  if (currentData.isNew) {
+    editingNewTabId.value = activeTabId.value
+    showCreateBookingModal.value = true
+    return
+  }
 
   try {
     const bookingCode = currentData.booking_code
@@ -540,13 +548,17 @@ const handleTabClick = (tab) => {
 
 const handleCreateModalClose = () => {
   showCreateBookingModal.value = false
-  const newId = `NEW_${Date.now()}`
-  bookingTabs.value.push({
-    id: newId,
-    title: 'New Booking',
-  })
-  bookingDataMap.value[newId] = { isNew: true }
-  activeTabId.value = newId
+  if (editingNewTabId.value) {
+    editingNewTabId.value = null
+  } else {
+    const newId = `NEW_${Date.now()}`
+    bookingTabs.value.push({
+      id: newId,
+      title: 'New Booking',
+    })
+    bookingDataMap.value[newId] = { isNew: true }
+    activeTabId.value = newId
+  }
 }
 
 const handleRegistrationModalClose = () => {
